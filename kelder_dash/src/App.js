@@ -32,9 +32,12 @@ function App() {
           <span>{("0" + Math.floor((time /100) % 100)).slice(-2)}</span>
         </div>
         <div>
-          <button onClick = {()=> { setRunning(true)} }>Start</button>
-          <button onClick = {()=> { setRunning(false)} }>Stop</button>
-          <button onClick = {()=> { setTime(0)}}>Reset</button>
+            {running ? (<button onClick = {()=> { setRunning(false)} }>Stop</button>
+        ):(
+            <button onClick = {()=> { setRunning(true)} }>Start</button>
+            )
+        }
+            <button onClick = {()=> { setTime(0)}}>Reset</button>
         </div>
       </header>
     </div>
