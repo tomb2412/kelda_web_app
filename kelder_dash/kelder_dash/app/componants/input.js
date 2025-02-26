@@ -15,15 +15,17 @@ const Input = function({taskList, setTaskList}){
 
     return (
         <div>
-            <form>
+            <form className='flex flex-row items-center gap-3'>
                 <input
-                className='border rounded px-2'
+                className='border rounded py-1.5 px-2.5 text-lg'
                 type="text"
                 placeholder="Add a task"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 />
-                <button onClick={handleAddTask}>Add</button>
+                <button 
+                    className='bg-violet-500 text-white py-1 px-3.5 rounded'
+                onClick={handleAddTask}>Add</button>
             </form>
         </div>
         
