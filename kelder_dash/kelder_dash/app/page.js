@@ -1,43 +1,30 @@
 'use client'
-import {useEffect, useState} from 'react';
+import {useState} from 'react';
+import Input from "../componants/input"
+import Board from "../componants/board"
 
 export default function Home() {
+  const [taskList, setTaskList] = useState([])
 
-  const [time, setTime] = useState(0);
-  const [running, setRunning] = useState(false);
-  useEffect(() => {
-    let interval;
-    if (running){
-      interval = setInterval(() => {
-        setTime((prevTime) => prevTime + 10);
-      },10);
-    } else if (!running){
-        clearInterval(interval);
-    }
-    return () => clearInterval(interval);
-  }, [running]);
-
+  console.log(taskList);
   return (
-    <div className='max-w-md flex flex-col items-center justify-center py-8'>
-      <h1 className='text-2xl font-semibold pb-2 '>Hello Sailor</h1>
-      <p>Lets get on the water</p>
-      <h2>Time under way</h2>
-    <div className='text-xl font-semibold py-4'>
-      <span>{("0" + Math.floor((time / 60000) % 60 )).slice(-2)}:</span>
-      <span>{("0" + Math.floor((time /1000) % 60)).slice(-2)}:</span>
-      <span>{("0" + Math.floor((time /100) % 100)).slice(-2)}</span>
-    </div>
-    <div className='w-1/3 max-w-sm flex flex-row justify-evenly'>
-      {running ? (
-        <button className='border rounded-lg py-1 px-2.5'
-          onClick = {()=> { setRunning(false)} }>Stop</button>
-      ):(
-        <button className='border rounded-lg py-1 px-2.5' 
-        onClick = {()=> { setRunning(true)} }>Start</button>
-      )}
-      <button className='border rounded-lg py-1 px-2.5'
-      onClick = {()=> { setTime(0)}}>Reset</button>
-    </div>
+    <div className='px-12'>
+      <div className='flex flex-col items-center justify-center py-8 gap-4'>
+        <h1 className='text-xl font-semibold'>02- To Do Board</h1>
+        <Input taskList={taskList} setTaskList={setTaskList} />
+      </div>   
+      <div className='flex flex-col gap-4 sm:grid grid-cols-3 px-3 sm:px-8 md:px-10 lg:px-12'>
+        {taskList.map((task, index) =>
+          <Board 
+            key={index}
+            index={index}
+            task={task}
+            taskList={taskList}
+            setTaskList={setTaskList}
+          /> 
+        )}
+      </div>
+      
     </div>
   );
 }
