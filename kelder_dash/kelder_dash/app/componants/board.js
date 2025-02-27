@@ -4,7 +4,7 @@ const Board = function({task,index,taskList, setTaskList}){
      const  handleDelete = () => {
         let removeIndex = task.indexOf(task);
         taskList.splice(removeIndex, 1);
-        setTaskList((currentTasks => currentTasks.filter(todo => index === 
+        setTaskList((currentTasks => currentTasks.filter(index === 
             removeIndex)));
      }
 
