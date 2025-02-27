@@ -24,7 +24,7 @@ const Input = function({taskList, setTaskList}){
                 onChange={(e) => setInput(e.target.value)}
                 />
                 <button 
-                    className='bg-violet-500 text-white py-1 px-3.5 rounded'
+                    className='bg-violet-500 text-white py-1 px-3.5 rounded font-semibold hover:opacity-90'
                 onClick={handleAddTask}>Add</button>
             </form>
         </div>
