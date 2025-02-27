@@ -1,10 +1,12 @@
 import Timer from "../componants/timer"
 
 const Board = function({task,index,taskList, setTaskList}){
+
      const  handleDelete = () => {
         let removeIndex = task.indexOf(task);
         taskList.splice(removeIndex, 1);
-        setTaskList((currentTasks => currentTasks.filter(index === 
+        // eslint-disable-next-line no-use-before-define
+        setTaskList((currentTasks => currentTasks.filter(todo => index === 
             removeIndex)));
      }
 
