@@ -2,8 +2,6 @@
 import {useState} from 'react';
 import Input from "../componants/input"
 import Board from "../componants/board"
-import Timer from "../componants/timer"
-
 
 export default function Home() {
   const [taskList, setTaskList] = useState([])
