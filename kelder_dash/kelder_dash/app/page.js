@@ -1,7 +1,7 @@
 'use client'
 import {useState} from 'react';
 import Input from "../app/componants/input"
-import Board from "../app/componants/board"
+import Board from "./componants/board"
 
 export default function Home() {
   const [taskList, setTaskList] = useState([])
