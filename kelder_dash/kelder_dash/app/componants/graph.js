@@ -1,5 +1,8 @@
 import { Line } from "react-chartjs-2";
 
+import {CategoryScale} from 'chart.js'; 
+Chart.register(CategoryScale);
+
 const Graph = function(input_data){
 
     return(
