@@ -1,10 +1,9 @@
 import { Line } from "react-chartjs-2";
-import Chart from 'chart.js/auto'
 
 const Graph = function(input_data){
 
     return(
-        <div>
+        <div className="flex flex-row justify-evenly">
             <Line
                 data={{
                     labels: input_data.data.map(row => row.year),
