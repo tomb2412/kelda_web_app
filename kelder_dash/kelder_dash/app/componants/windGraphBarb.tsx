@@ -19,7 +19,7 @@ const WindBarb = function(){
             title: {text:'Wind speed and direction'},
             series: [{
                 type: 'line',
-                data: [["0",1],["1",2],["2",3]]
+                data: [["0",1],["1",2],["2",3],["3",1],["4",2],["5",3]]
             },
             {
                 type:'windbarb',
@@ -27,22 +27,34 @@ const WindBarb = function(){
                     {
                         x:0,
                         value:1,
-                        direction:180},
+                        direction:0},
                     {
                         x:1,
                         value:2,
-                        direction:90},
+                        direction:45},
                     {
                         x:2,
                         value:5,
-                        direction:270},
+                        direction:90},
+                    {
+                        x:3,
+                        value:1,
+                        direction:135},
+                    {
+                        x:4,
+                        value:2,
+                        direction:180},
+                    {
+                        x:5,
+                        value:5,
+                        direction:225},
                     ]
             }
         ]
     };
 
     return (
-        <div className="boarder rounded-xl">
+        <div className="boarder rounded-xl p-3">
         <HighchartsReact highcharts = {Highcharts} options = {chart_options}/> 
         </div>
     )
