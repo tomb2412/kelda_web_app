@@ -67,7 +67,8 @@ const WindGraph = function(input_data){
                             pointStyle: false,
                             pointRadius: '5',
                             pointRotation:'45',
-                            borderWidth: "1.5"
+                            borderWidth: "1.5",
+                            pointHitRadius:10
                         },
                         {
                             label: "Gusts Speed",

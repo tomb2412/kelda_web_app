@@ -2,26 +2,27 @@
 import {useState} from 'react';
 import Input from "../app/componants/input"
 import Board from "./componants/board"
-import WindGraph from "./componants/graph"
+import WindGraph from "./componants/windGraph"
 import WindData from "./assets/wind_data"
+import DepthGuage from "./componants/depth"
+import WindBarb from "./componants/windGraphBarb"
+import Guage from "./componants/gauge"
 
 export default function Home() {
   const [taskList, setTaskList] = useState([]);
 
   console.log(taskList);
   return (
-    <div className='px-12'>
+      <div className='px-12'>
       <div className='flex flex-col items-center justify-center py-8 gap-4'>
         <h1 className='text-xl font-semibold'>02- To Do Board</h1>
         <Input taskList={taskList} setTaskList={setTaskList} />
       </div>  
-      <div className='flex flex-col sm:grid md:grid-cols-2 lg:grid-cols-3 px-3 sm:px-8 md:px-10 lg:px-6 gap-3'>
+      <div className='flex flex-col sm:grid md:grid-cols-2 lg:grid-cols-3 gap-3'>
         <WindGraph data={WindData()}/>
-        <WindGraph data={WindData()}/>
-        <WindGraph data={WindData()}/>
-        <WindGraph data={WindData()}/>
-        <WindGraph data={WindData()}/>
-        <WindGraph data={WindData()}/>
+        <DepthGuage />
+        <WindBarb />
+        <Guage />
       </div>
  
       <div className='flex flex-col gap-4 sm:grid grid-cols-3 py-3 px-3 sm:px-8 md:px-10 lg:px-12'>
