@@ -1,11 +1,11 @@
-import Highcharts from "highcharts"
-import HighchartsReact from "highcharts-react-official"
-import HighchartsMore from "highcharts/highcharts-more"
+import Highcharts from "highcharts";
+import HighchartsReact from "highcharts-react-official";
+import HighchartsMore from "highcharts/highcharts-more";
 import HighchartsSolidGauge  from "highcharts/modules/solid-gauge";
 
 if (typeof Highcharts === 'function') {
-    HighchartsMore(Highcharts)
-    HighchartsSolidGauge(Highcharts) 
+    HighchartsMore(Highcharts);
+    HighchartsSolidGauge(Highcharts);
 }
 
 
@@ -70,8 +70,7 @@ const Guage = function({}){
         },
 
         series: [{
-            name: 'Speed',
-            data: [30],
+            data: [50],
             tooltip: {
                 valueSuffix: '%'
             }
