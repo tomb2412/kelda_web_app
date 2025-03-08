@@ -19,11 +19,24 @@ const WindBarb = function(){
             title: {text:'Wind speed and direction'},
             series: [{
                 type: 'line',
-                data: [1,2,3]
+                data: [["0",1],["1",2],["2",3]]
             },
             {
                 type:'windbarb',
-                data: [(0,1,1),(1,2,2),(2,3,3)]
+                data: [
+                    {
+                        x:0,
+                        value:1,
+                        direction:180},
+                    {
+                        x:1,
+                        value:2,
+                        direction:90},
+                    {
+                        x:2,
+                        value:5,
+                        direction:270},
+                    ]
             }
         ]
     };
