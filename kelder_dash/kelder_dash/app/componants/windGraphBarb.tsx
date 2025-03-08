@@ -31,9 +31,9 @@ const WindBarb = function(){
     };
 
     return (
-        <>
+        <div className="boarder rounded-xl">
         <HighchartsReact highcharts = {Highcharts} options = {chart_options}/> 
-        </>
+        </div>
     )
 }
 
