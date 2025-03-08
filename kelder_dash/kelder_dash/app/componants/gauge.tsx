@@ -21,61 +21,43 @@ const Guage = function({}){
         pane: {
             startAngle: -90,
             endAngle: 90,
-            background: {
-                backgroundColor:
-                    Highcharts.defaultOptions.legend.backgroundColor || '#fafafa',
+            background: [{
+                backgroundColor:'#fafafa',
                 borderRadius: 5,
                 innerRadius: '60%',
                 outerRadius: '100%',
                 shape: 'arc'
-            }
+            }]
         },
 
-    
         // the value axis
         yAxis: {
             stops: [
-                [0.1, '#55BF3B'], // green
+                [0.1, '#DF5353'], // red
                 [0.5, '#DDDF0D'], // yellow
-                [0.9, '#DF5353'] // red
+                [0.9, '#55BF3B'] // green
             ],
             lineWidth: 0,
             tickWidth: 0,
-            minorTickInterval: null,
             tickAmount: 2,
-            title: {
-                y: -70
-            },
             labels: {
                 y: 16
-            }
-        },
-    
-        plotOptions: {
-            solidgauge: {
-                borderRadius: 3,
-                dataLabels: {
-                    y: 5,
-                    borderWidth: 0,
-                    useHTML: true
-                }
-            }
-        },
-        yAxis: {
+            },
             min: 0,
             max: 100,
             title: {
-                text: '%'
+                text: '%',
+                y: -100
             }
         },
 
         series: [{
-            data: [50],
+            type: "solidgauge",
+            data: [30],
             tooltip: {
                 valueSuffix: '%'
             }
         }]
-
     };
     
         return (
