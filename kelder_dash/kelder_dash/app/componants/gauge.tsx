@@ -11,8 +11,6 @@ if (typeof Highcharts === 'function') {
 
 
 const Guage = function({}){
-    const chartValue = 10
-    
     const chart_options:Highcharts.Options={
         chart: {
             type: 'solidgauge'
@@ -82,7 +80,7 @@ const Guage = function({}){
     };
     
         return (
-            <div className="border rounded-xl">
+            <div className="grid grid-row-6 border rounded-xl p-3">
             <HighchartsReact highcharts = {Highcharts} options = {chart_options}/> 
             </div>
         )

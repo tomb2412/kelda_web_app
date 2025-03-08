@@ -15,8 +15,6 @@ if (typeof Highcharts === 'function') {
 
 
 const WindBarb = function(){
-    const chartValue = 10
-
     const chart_options:Highcharts.Options={
             title: {text:'Wind speed and direction'},
             series: [{
