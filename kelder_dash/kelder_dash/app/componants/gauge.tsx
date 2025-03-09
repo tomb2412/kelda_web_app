@@ -2,6 +2,7 @@ import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 import HighchartsMore from "highcharts/highcharts-more";
 import HighchartsSolidGauge  from "highcharts/modules/solid-gauge";
+import { type } from "node:os";
 
 if (typeof Highcharts === 'function') {
     HighchartsMore(Highcharts);
@@ -11,57 +12,59 @@ if (typeof Highcharts === 'function') {
 
 
 const Guage = function({}){
-    const chart_options:Highcharts.Options={
-        chart: {
-            type: 'solidgauge'
-        },
-    
-        title: {text:"Fuel"},
-    
-        pane: {
-            startAngle: -90,
-            endAngle: 90,
-            background: [{
-                backgroundColor:'#fafafa',
-                borderRadius: 5,
-                innerRadius: '60%',
-                outerRadius: '100%',
-                shape: 'arc'
-            }]
-        },
 
-        // the value axis
-        yAxis: {
-            stops: [
-                [0.1, '#DF5353'], // red
-                [0.5, '#DDDF0D'], // yellow
-                [0.9, '#55BF3B'] // green
-            ],
-            lineWidth: 0,
-            tickWidth: 0,
-            tickAmount: 2,
-            labels: {
-                y: 16
+    if (typeof Highcharts === 'function') {
+        const chart_options:Highcharts.Options={
+            chart: {
+                type: 'solidgauge'
             },
-            min: 0,
-            max: 100,
-            title: {
-                text: '%',
-                y: -100
-            }
-        },
+        
+            title: {text:"Fuel"},
+        
+            pane: {
+                startAngle: -90,
+                endAngle: 90,
+                background: [{
+                    backgroundColor:'#fafafa',
+                    borderRadius: 5,
+                    innerRadius: '60%',
+                    outerRadius: '100%',
+                    shape: 'arc'
+                }]
+            },
 
-        series: [{
-            type: "solidgauge",
-            data: [30],
-            tooltip: {
-                valueSuffix: '%'
-            }
-        }]
-    };
-    
+            // the value axis
+            yAxis: {
+                stops: [
+                    [0.1, '#DF5353'], // red
+                    [0.5, '#DDDF0D'], // yellow
+                    [0.9, '#55BF3B'] // green
+                ],
+                lineWidth: 0,
+                tickWidth: 0,
+                tickAmount: 2,
+                labels: {
+                    y: 16
+                },
+                min: 0,
+                max: 100,
+                title: {
+                    text: '%',
+                    y: -100
+                }
+            },
+
+            series: [{
+                type: "solidgauge",
+                data: [100],
+                tooltip: {
+                    valueSuffix: '%'
+                }
+            }]
+        };
+    }
         return (
-            <div className="grid grid-row-6 border rounded-xl p-3">
+            <div className="border rounded-xl p-3">
             <HighchartsReact highcharts = {Highcharts} options = {chart_options}/> 
             </div>
         )

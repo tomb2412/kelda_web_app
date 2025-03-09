@@ -1,12 +1,12 @@
 'use client'
 import {useState} from 'react';
-import Input from "../app/componants/input"
-import Board from "./componants/board"
-import WindGraph from "./componants/windGraph"
-import WindData from "./assets/wind_data"
-import DepthGuage from "./componants/depth"
-import WindBarb from "./componants/windGraphBarb"
-import Guage from "./componants/gauge"
+import Input from "./componants/input";
+import Board from "./componants/board";
+import WindGraph from "./componants/windGraph";
+import WindData from "./assets/wind_data";
+import DepthGuage from "./componants/depth";
+import WindBarb from "./componants/windGraphBarb";
+import Guage from "./componants/gauge";
 
 export default function Home() {
   const [taskList, setTaskList] = useState([]);
