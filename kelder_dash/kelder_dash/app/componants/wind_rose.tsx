@@ -13,7 +13,7 @@ if (typeof Highcharts === 'function') {
 
 const WindRose = function({}){
     
-    var compass_labels = {180:"N", 225:"NE", 270:"E", 315:"SE", 0:"S", 45:"SW", 90:"W", 135:"NW"};
+    const compass_labels = {180:"N", 225:"NE", 270:"E", 315:"SE", 0:"S", 45:"SW", 90:"W", 135:"NW"};
 
 
     const chart_options:Highcharts.Options={
@@ -30,7 +30,7 @@ const WindRose = function({}){
                 backgroundColor:'#fafafa',
                 borderRadius: 5,
                 innerRadius: '60%',
-                outerRadius: '100%',
+                outerRadius: '110%',
                 shape: 'arc'
             }]
         },
@@ -45,7 +45,7 @@ const WindRose = function({}){
                 tickColor: '#000000',
                 minorTickColor: '#000000',
                 lineWidth: 2,
-                offset: -10,
+                offset: -28,
                 labels: {
                     distance: -20,
                     rotation: 'auto'
@@ -62,7 +62,7 @@ const WindRose = function({}){
                 tickColor: '#000000',
                 minorTickColor: '#00000',
                 lineWidth: 2,
-                offset: 0,
+                offset: -18,
                 tickInterval: 45,
                 labels: {
                     distance: 10,
