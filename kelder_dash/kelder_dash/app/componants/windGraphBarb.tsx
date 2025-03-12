@@ -1,18 +1,16 @@
 "use client";
 import Highcharts from "highcharts"
 import HighchartsReact from "highcharts-react-official"
-//import HighchartsExporting from 'highcharts/modules/exporting'
-import stock from "highcharts/modules/stock";
+import HighchartsExporting from 'highcharts/modules/exporting'
 import datagrouping from "highcharts/modules/datagrouping";
 import windbarb from "highcharts/modules/windbarb";
 //import HighchartsSolidGauge from 'highcharts/modules/solid-gauge'
 
 if (typeof Highcharts === 'function') {
-    //stock(Highcharts);
     //HighchartsSolidGauge(Highcharts)
-    //datagrouping(Highcharts);
+    datagrouping(Highcharts);
     windbarb(Highcharts);
-    //HighchartsExporting(Highcharts);
+    HighchartsExporting(Highcharts);
 }
 
 
