@@ -7,6 +7,7 @@ import WindData from "./assets/wind_data";
 import DepthGuage from "./componants/depth";
 import WindBarb from "./componants/windGraphBarb";
 import Guage from "./componants/gauge";
+import WindRose from "./componants/wind_rose";
 
 export default function Home() {
   const [taskList, setTaskList] = useState([]);
@@ -23,6 +24,7 @@ export default function Home() {
         <DepthGuage />
         <WindBarb />
         <Guage />
+        <WindRose />
       </div>
  
       <div className='flex flex-col gap-4 sm:grid grid-cols-3 py-3 px-3 sm:px-8 md:px-10 lg:px-12'>
