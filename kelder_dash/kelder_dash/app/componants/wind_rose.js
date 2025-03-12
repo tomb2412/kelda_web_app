@@ -1,4 +1,5 @@
 "use client";
+
 import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 import HighchartsMore from "highcharts/highcharts-more";
@@ -16,7 +17,7 @@ const WindRose = function({}){
     const compass_labels = {180:"N", 225:"NE", 270:"E", 315:"SE", 0:"S", 45:"SW", 90:"W", 135:"NW"};
 
 
-    const chart_options:Highcharts.Options={
+    const chart_options={//:Highcharts.Options={
         chart: {
             type: 'gauge'
         },
@@ -30,7 +31,7 @@ const WindRose = function({}){
                 backgroundColor:'#fafafa',
                 borderRadius: 5,
                 innerRadius: '60%',
-                outerRadius: '110%',
+                outerRadius: '100%',
                 shape: 'arc'
             }]
         },
@@ -45,10 +46,9 @@ const WindRose = function({}){
                 tickColor: '#000000',
                 minorTickColor: '#000000',
                 lineWidth: 2,
-                offset: -28,
+                offset: 5,
                 labels: {
-                    distance: -20,
-                    rotation: 'auto'
+                    distance: -20
                 },
                 tickLength: 5,
                 minorTickLength: 5,
@@ -62,15 +62,14 @@ const WindRose = function({}){
                 tickColor: '#000000',
                 minorTickColor: '#00000',
                 lineWidth: 2,
-                offset: -18,
+                offset: 15,
                 tickInterval: 45,
                 labels: {
                     distance: 10,
-                    formatter: function() {
-                        var value = compass_labels[this.value];
+                    formatter: function () {
+                        var value = compass_labels[this.value]// as keyof typeof compass_labels];
                         return value !== 'undefined' ? value : this.value;
-                    },
-                    rotation: 'auto'
+                    }
                 },
                 tickLength: 5,
                 minorTickLength: 5,
