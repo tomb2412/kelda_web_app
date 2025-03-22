@@ -9,8 +9,7 @@ import WindBarb from "./componants/windGraphBarb";
 import Guage from "./componants/gauge";
 import WindRose from "./componants/wind_rose";
 
-
-function App() {
+export default function Home() {
   const [taskList, setTaskList] = useState([]);
 
   console.log(taskList);
@@ -43,5 +42,3 @@ function App() {
     </div>
   );
 }
-
-export default App
