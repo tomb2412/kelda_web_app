@@ -19,9 +19,9 @@ const WindRose = function({}){
 
     const chart_options={//:Highcharts.Options={
         chart: {
-            type: 'gauge'
+            type: 'gauge',
+            backgroundColor:"#134e4a",
         },
-    
         title: {text:"Wind Rose"},
     
         pane: {
@@ -85,7 +85,8 @@ const WindRose = function({}){
                 color: '#55BF3B',
                 tooltip: {
                     valueSuffix: '0 M'
-                }
+                },
+                colorAxis: "#55BF3B"
             },
             {
                 data: [-30],

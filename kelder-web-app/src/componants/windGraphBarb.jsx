@@ -15,14 +15,27 @@ if (typeof Highcharts === 'function') {
 
 
 const WindBarb = function(){
-    const chart_options:Highcharts.Options={
-            title: {text:'Wind speed and direction'},
-            series: [{
+    const chart_options={//Highcharts.Options={
+            colorAxis:{
+                lineColor:"#ffffff",
+                gridLineColor:"#ffffff"
+            },
+            title: {
+                text:'Wind speed and direction',
+                style:{color:"#ffffff"}
+            },
+            chart: {
+                backgroundColor:"#134e4a"
+            },
+            series: [
+                {
                 type: 'line',
+                color: "#ffffff",
                 data: [["0",1],["1",2],["2",3],["3",1],["4",2],["5",3]]
             },
             {
                 type:'windbarb',
+                color: "#ffffff",
                 data: [
                     {
                         x:0,
@@ -54,7 +67,7 @@ const WindBarb = function(){
     };
 
     return (
-        <div className="border rounded-xl p-3">
+        <div className="border rounded-xl p-3 bg-teal-900">
         <HighchartsReact highcharts = {Highcharts} options = {chart_options}/> 
         </div>
     )

@@ -15,31 +15,33 @@ function App() {
 
   console.log(taskList);
   return (
-      <div className='px-12'>
-      <div className='flex flex-col items-center justify-center py-8 gap-4'>
-        <h1 className='text-xl font-semibold'>02- To Do Board</h1>
-        <Input taskList={taskList} setTaskList={setTaskList} />
-      </div>  
-      <div className='flex flex-col sm:grid md:grid-cols-2 lg:grid-cols-3 gap-3'>
-        <WindGraph data={WindData()}/>
-        <DepthGuage />
-        <WindBarb />
-        <Guage />
-        <WindRose />
+    <div className='bg-slate-900'>
+        <div className='px-12 py-8 gap-4 '>
+        {/* <div className='flex flex-col items-center justify-center py-8 gap-4'>
+          <h1 className='text-xl font-semibold'>02- To Do Board</h1>
+          <Input taskList={taskList} setTaskList={setTaskList} />
+        </div>   */}
+        <div className='flex flex-col sm:grid md:grid-cols-2 lg:grid-cols-3 gap-3'>
+          <Guage />
+          <WindBarb />
+          <DepthGuage />
+          <WindRose />
+          <WindGraph data={WindData()}/>
+        </div>
+  
+        <div className='flex flex-col gap-4 sm:grid grid-cols-3 py-3 px-3 sm:px-8 md:px-10 lg:px-12'>
+          {taskList.map((task, index) =>
+            <Board 
+              key={index}
+              index={index}
+              task={task}
+              taskList={taskList}
+              setTaskList={setTaskList}
+            /> 
+          )}
+        </div>
+        
       </div>
- 
-      <div className='flex flex-col gap-4 sm:grid grid-cols-3 py-3 px-3 sm:px-8 md:px-10 lg:px-12'>
-        {taskList.map((task, index) =>
-          <Board 
-            key={index}
-            index={index}
-            task={task}
-            taskList={taskList}
-            setTaskList={setTaskList}
-          /> 
-        )}
-      </div>
-      
     </div>
   );
 }
