@@ -2,8 +2,6 @@
 import {useState} from 'react';
 import Input from "./componants/input";
 import Board from "./componants/board";
-import WindGraph from "./componants/windGraph";
-import WindData from "./assets/wind_data";
 import DepthGuage from "./componants/depth";
 import WindBarb from "./componants/windGraphBarb";
 import Guage from "./componants/gauge";
@@ -26,7 +24,6 @@ function App() {
           <WindBarb />
           <DepthGuage />
           <WindRose />
-          <WindGraph data={WindData()}/>
         </div>
   
         <div className='flex flex-col gap-4 sm:grid grid-cols-3 py-3 px-3 sm:px-8 md:px-10 lg:px-12'>
