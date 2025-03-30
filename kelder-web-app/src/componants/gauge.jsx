@@ -15,7 +15,8 @@ const Guage = function({}){
     
     const chart_options={//Highcharts.Options={
         chart: {
-            type: 'solidgauge'
+            type: 'solidgauge',
+            styledMode: false
         },
     
         title: {text:"Fuel"},

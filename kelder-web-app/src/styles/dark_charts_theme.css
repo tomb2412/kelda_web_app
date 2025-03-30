@@ -1,0 +1,10 @@
+@import '../../node_modules/highcharts/css/highcharts.css';
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --highcharts-background-color: #00ff15;
+    }
+}
+.highcharts-dark{
+    --highcharts-background-color: #134e4a;
+}

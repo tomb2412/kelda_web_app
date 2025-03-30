@@ -20,7 +20,7 @@ const WindRose = function({}){
     const chart_options={//:Highcharts.Options={
         chart: {
             type: 'gauge',
-            backgroundColor:"#134e4a",
+            styledMode: false
         },
         title: {text:"Wind Rose"},
     

@@ -1,6 +1,11 @@
 import Toggle from 'react-toggle'
+import lightDarkToggle from './lightDarkToggle'
 import "react-toggle/style.css" // for ES6 modules
+
 const Header = () => {
+
+    const {theme, toggleTheme} = lightDarkToggle()
+
     return(
         <header className="flex flex-row bg-slate-800/90 items-center justify-between h-15" >
             <div >
@@ -16,8 +21,9 @@ const Header = () => {
                 <Toggle
                     defaultChecked={true}
                     className='mr-10 ml-3'
-                    onChange={false} />
+                    onChange={toggleTheme} />
                 </span>
+                <span>{theme}</span>
             </div>
         </header>
     )
