@@ -8,10 +8,8 @@ export default () => {
     const toggleTheme = () => {
         if (theme === "dark"){
             setTheme("light");
-            `highcharts-$light`;
         } else {
             setTheme("dark");
-            `highcharts-$dark`;
         }
     }
 

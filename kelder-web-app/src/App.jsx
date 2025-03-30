@@ -6,6 +6,7 @@ import DepthGuage from "./componants/depth";
 import WindBarb from "./componants/windGraphBarb";
 import Guage from "./componants/gauge";
 import WindRose from "./componants/wind_rose";
+import BilgeDepth from './componants/bilgeDepth';
 
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
           <WindBarb />
           <DepthGuage />
           <WindRose />
+          <BilgeDepth />
         </div>
   
         <div className='flex flex-col gap-4 sm:grid grid-cols-3 py-3 px-3 sm:px-8 md:px-10 lg:px-12'>
