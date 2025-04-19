@@ -7,7 +7,7 @@ import WindBarb from "./componants/windGraphBarb";
 import Guage from "./componants/gauge";
 import WindRose from "./componants/wind_rose";
 import BilgeDepth from './componants/bilgeDepth';
-
+import GpsDisplay from "./componants/gps";
 
 function App() {
   const [taskList, setTaskList] = useState([]);
@@ -21,9 +21,10 @@ function App() {
           <Input taskList={taskList} setTaskList={setTaskList} />
         </div>   */}
         <div className='flex flex-col sm:grid md:grid-cols-2 lg:grid-cols-3 gap-3'>
+          <GpsDisplay />
+          <DepthGuage />
           <Guage />
           <WindBarb />
-          <DepthGuage />
           <WindRose />
           <BilgeDepth />
         </div>
