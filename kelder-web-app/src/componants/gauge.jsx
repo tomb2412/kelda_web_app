@@ -3,6 +3,7 @@ import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 import HighchartsMore from "highcharts/highcharts-more";
 import HighchartsSolidGauge  from "highcharts/modules/solid-gauge";
+import useTheme from "./lightDarkToggle";
 
 if (typeof Highcharts === 'function') {
     HighchartsMore(Highcharts);
@@ -12,6 +13,9 @@ if (typeof Highcharts === 'function') {
 
 
 const Guage = function({}){
+
+    const {theme} = useTheme();
+    const isNightMode = theme === "light";
     
     const chart_options={//Highcharts.Options={
         chart: {
@@ -25,7 +29,7 @@ const Guage = function({}){
             startAngle: -90,
             endAngle: 90,
             background: [{
-                backgroundColor:'#fafafa',
+                backgroundColor: isNightMode ? '#00000' : '#fafafa',
                 borderRadius: 5,
                 innerRadius: '60%',
                 outerRadius: '100%',

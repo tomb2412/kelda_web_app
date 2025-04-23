@@ -1,10 +1,11 @@
-import Toggle from 'react-toggle'
-import lightDarkToggle from './lightDarkToggle'
-import "react-toggle/style.css" // for ES6 modules
+import Toggle from 'react-toggle';
+import useTheme from './lightDarkToggle';
+import "react-toggle/style.css"; // for ES6 modules
 
 const Header = () => {
 
-    const {theme, toggleTheme} = lightDarkToggle()
+    const {theme, toggleTheme} = useTheme();
+    const isNightMode = theme === "dark";
 
     return(
         <header className="flex flex-row bg-slate-800/90 items-center justify-between h-15" >

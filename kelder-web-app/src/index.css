@@ -1,2 +1,4 @@
 @import "./styles/dark_charts_theme.css";
 @import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
