@@ -99,7 +99,7 @@ const WindRose = function({}){
     };
 
     return (
-        <div className="border rounded-xl p-3  bg-teal-900">
+        <div className="rounded-xl p-3 bg-slate-200 dark:bg-teal-900">
         <HighchartsReact highcharts = {Highcharts} options = {chart_options}/> 
         </div>
     )

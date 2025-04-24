@@ -29,8 +29,7 @@ const GpsDisplay = function({}){
     }, []);
 
     return (
-        <div className="grid rounded-xl p-3 bg-teal-900 text-white">
-            {error && <p style={{ color: 'red' }}>{error}</p>}
+        <div className="flex  flex-col items-center justify-center rounded-xl p-3 bg-slate-200 dark:bg-teal-900">
             {gpsData ? (
                 <div>
                 <p><strong>Time:</strong> {gpsData.timestamp}</p>
@@ -39,8 +38,9 @@ const GpsDisplay = function({}){
                 <p><strong>Speed over ground:</strong> {gpsData.speed_over_ground} knts</p>
                 </div>
             ) : (
-                <p>Loading GPS data...</p>
+                <p className="text-2xl text-slate-900 dark:text-white">Loading GPS data...</p>
             )}
+            {error && <p className="text-red-500 font-bold text-3xl text-center align-middle">{error}</p>}
         </div>
     )
 }
