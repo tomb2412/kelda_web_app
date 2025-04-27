@@ -1,9 +1,11 @@
-"use client";
+//"use client";
+import React, {useState, useEffect, useRef} from 'react';
 import Highcharts from "highcharts"
 import HighchartsReact from "highcharts-react-official"
 import HighchartsExporting from 'highcharts/modules/exporting'
 import datagrouping from "highcharts/modules/datagrouping";
 import windbarb from "highcharts/modules/windbarb";
+import axios from 'axios';
 //import HighchartsSolidGauge from 'highcharts/modules/solid-gauge'
 
 if (typeof Highcharts === 'function') {
@@ -13,64 +15,129 @@ if (typeof Highcharts === 'function') {
     HighchartsExporting(Highcharts);
 }
 
+const WindBarb = () => {
+    
+    const [isDarkMode, setIsDarkMode] = useState(false);
+    
+    useEffect(() => {
+        // Toggling the 'dark' class on the <html> element based on isDarkMode state
+        document.documentElement.classList.toggle('dark', isDarkMode);
+    }, [isDarkMode]);
 
-const WindBarb = function(){
-    const chart_options={//Highcharts.Options={
-            colorAxis:{
-                lineColor:"#ffffff",
-                gridLineColor:"#ffffff"
-            },
-            title: {
-                text:'Wind speed and direction',
-                style:{color:"#ffffff"}
-            },
-            chart: {
-                backgroundColor:"#134e4a"
-            },
-            series: [
-                {
-                type: 'line',
-                color: "#ffffff",
-                data: [["0",1],["1",2],["2",3],["3",1],["4",2],["5",3]]
+    const toggleDarkMode = () => setIsDarkMode((prev) => !prev);
+
+    const [series, setSeries] = useState([]);
+    const [error_wind, setError_wind] = useState(null);
+    const chartRef = useRef(null);
+
+    // Fetch data and update series every 2 seconds
+    useEffect(() => {
+        const requestWindyData = async () => {
+            try {
+                const response = await axios.get("https://api.open-meteo.com/v1/forecast?latitude=52.1964531&longitude=-2.221358&hourly=temperature_2m,pressure_msl,wind_speed_10m,wind_direction_10m,rain,wind_gusts_10m&models=ukmo_seamless&forecast_days=1");
+
+                console.log("API response:", response.data);
+
+                const timestamps = response.data.hourly.time.map(t => new Date(t).getTime());
+                const temperatureSeries = timestamps.map((ts, i) => ({ x: ts, y: response.data.hourly.temperature_2m[i] }));
+                const pressureSeries = timestamps.map((ts, i) => ({ x: ts, y: response.data.hourly.pressure_msl[i] }));
+                const windSeries = timestamps.map((ts, i) => ({
+                    x: ts, // Convert time string to timestamp (milliseconds)
+                    value: response.data.hourly.wind_speed_10m[i],
+                    direction: response.data.hourly.wind_direction_10m[i],
+                  }));
+
+                // Log the individual series
+                console.log("Temperature Series:", temperatureSeries);
+                console.log("Pressure Series:", pressureSeries);
+                console.log("Wind series:", windSeries);
+
+                // Set the series state here, to be passed to Highcharts
+                setSeries([
+                    {
+                        name: "Temperature (2m)",
+                        data: temperatureSeries,
+                        type: 'line',
+                        yAxis: 0,
+                    },
+                    {
+                        name: "Pressure (Surface)",
+                        data: pressureSeries,
+                        type: 'line',
+                        yAxis: 1,
+                    },
+                    {
+                        name: "Wind Barb",
+                        type:'windbarb',
+                        color: "#000000",
+                        data: windSeries,
+                    }
+                ]);
+
+                // Reset any error message
+                setError_wind(null);
+
+            } catch (err) {
+                console.log("Error fetching point weather data:", err);
+                setError_wind("Error fetching point weather data");
+            }
+        };
+
+        // Request data immediately and then at 1 hour intervals
+        requestWindyData();
+        const interval = setInterval(requestWindyData, 3600000);
+
+        return () => clearInterval(interval); // Cleanup interval on unmount
+    }, []);
+
+    // Define the chart options (dynamic series)
+    const chartOptions = {
+        title: {
+            text: 'Weather Data (Temperature & Pressure)',
+            style: { color: "#000000" },
+        },
+        chart: {
+            backgroundColor: isDarkMode ? "#004D40" : "#c8d9c3",
+        },
+        xAxis: [{
+            type: 'datetime',
+            tickInterval: 2 * 36e5, // two hours
+            minorTickInterval: 36e5, // one hour
+            tickLength: 0,
+            gridLineWidth: 1,
+            gridLineColor: 'rgba(128, 128, 128, 0.1)',
+            startOnTick: false,
+            endOnTick: false,
+            minPadding: 0,
+            maxPadding: 0,
+            offset: 30,
+            showLastLabel: true,
+            labels: { format: '{value:%H}' },
+            crosshair: true,
+        }],
+        yAxis: [
+            {
+                title: { text: 'Temperature (°C)' },
+                opposite: false, // Temperature on the left axis
             },
             {
-                type:'windbarb',
-                color: "#ffffff",
-                data: [
-                    {
-                        x:0,
-                        value:1,
-                        direction:0},
-                    {
-                        x:1,
-                        value:2,
-                        direction:45},
-                    {
-                        x:2,
-                        value:5,
-                        direction:90},
-                    {
-                        x:3,
-                        value:1,
-                        direction:135},
-                    {
-                        x:4,
-                        value:2,
-                        direction:180},
-                    {
-                        x:5,
-                        value:5,
-                        direction:225},
-                    ]
+                title: { text: 'Pressure (hPa)' },
+                opposite: true, // Pressure on the right axis
             }
-        ]
+        ],
+        series: series, // Dynamically updated series
     };
 
     return (
-        <div className="rounded-xl p-3 bg-slate-200 dark:bg-teal-900">
-        <HighchartsReact highcharts = {Highcharts} options = {chart_options}/> 
+        <div className="rounded-xl p-3 bg-[#c8d9c3] dark:bg-teal-900">
+            {series.length > 0 ? (
+                <HighchartsReact highcharts={Highcharts} options={chartOptions} ref={chartRef} />
+            ) : (
+                <p className="text-2xl text-slate-900 dark:text-white">Loading weather data...</p>
+            )}
+            {error_wind && <p className="text-red-500 font-bold text-3xl text-center align-middle">{error_wind}</p>}
         </div>
-    )
-}
+    );
+};
 
-export default WindBarb
+export default WindBarb;
