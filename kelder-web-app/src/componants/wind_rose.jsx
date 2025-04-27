@@ -20,7 +20,8 @@ const WindRose = function({}){
     const chart_options={//:Highcharts.Options={
         chart: {
             type: 'gauge',
-            styledMode: false
+            styledMode: false,
+            backgroundColor: "#c8d9c3",
         },
         title: {text:"Wind Rose"},
     
@@ -99,7 +100,7 @@ const WindRose = function({}){
     };
 
     return (
-        <div className="rounded-xl p-3 bg-slate-200 dark:bg-teal-900">
+        <div className="rounded-xl p-3 bg-[#c8d9c3] dark:bg-teal-900">
         <HighchartsReact highcharts = {Highcharts} options = {chart_options}/> 
         </div>
     )

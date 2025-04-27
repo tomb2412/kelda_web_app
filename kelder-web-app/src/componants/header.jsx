@@ -8,7 +8,7 @@ const Header = () => {
     const isNightMode = theme === "dark";
 
     return(
-        <header className="flex flex-row items-center justify-between h-15 bg-sky-300 dark:bg-slate-800/90" >
+        <header className="flex flex-row items-center justify-between h-15 bg-sky-200 dark:bg-slate-800/90" >
             <div >
                 <div className="text-slate-900 dark:text-white flex-row flex px-4 text-2xl">
                     <p className="font-bold">Connection Status: </p>
