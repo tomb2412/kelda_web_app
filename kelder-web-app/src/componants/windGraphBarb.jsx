@@ -124,7 +124,7 @@ const WindBarb = () => {
     };
 
     return (
-        <div className="rounded-xl p-3 bg-[#c8d9c3] dark:bg-teal-900">
+        <div className="rounded-xl p-3 bg-[#024887]/10 dark:bg-teal-900">
             {series.length > 0 ? (
                 <HighchartsReact highcharts={Highcharts} options={chartOptions} ref={chartRef} />
             ) : (

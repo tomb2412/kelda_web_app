@@ -7,7 +7,7 @@ const Header = () => {
     const {theme, toggleTheme} = useThemeContext();
 
     return(
-        <header className="flex flex-row items-center justify-between h-15 bg-sky-200 dark:bg-slate-800/90" >
+        <header className="flex flex-row items-center justify-between h-15 bg-[#024887]/50 dark:bg-slate-800/90" >
             <div >
                 <div className="text-slate-900 dark:text-white flex-row flex px-4 text-2xl">
                     <p className="font-bold">Connection Status: </p>
@@ -23,7 +23,6 @@ const Header = () => {
                     className='mr-10 ml-3'
                     onChange={toggleTheme} />
                 </span>
-                <span>{theme}</span>
             </div>
         </header>
     )

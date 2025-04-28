@@ -23,7 +23,7 @@ ChartJS.register(
 const WindGraph = function(input_data){
     return(
         <div className="rounded-xl flex flex-col items-center justify-start
-            text-center text-lg bg-[#c8d9c3] dark:bg-teal-900">
+            text-center text-lg bg-[#024887]/10 dark:bg-teal-900">
             <Line className=""
                 options= {{
                     responsive:true,
