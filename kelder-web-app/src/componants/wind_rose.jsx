@@ -28,8 +28,9 @@ const WindRose = function({}){
         title: {
             text:"Wind Rose",
             style: {
+                opacity: 0,
                 color: theme==='light' ? "#000000" : "#ffffff",
-                fontSize: '30px'
+                fontSize: '1px'
             }
         },
     
@@ -44,6 +45,16 @@ const WindRose = function({}){
                 shape: 'arc'
             }]
         },
+        plotOptions: {
+            gauge: {
+                dial: {
+                    radius: '80%',
+                    backgroundColor: theme==='light' ? "#000000" : "#ffffff",
+                    baseWidth: 5,
+                    topWidth: 1,
+                }
+            }
+        },
 
         // the value axis
         yAxis: 
@@ -57,6 +68,10 @@ const WindRose = function({}){
                 lineWidth: 5,
                 offset: 5,
                 labels: {
+                    style:{
+                        color: theme==='light' ? "#000000" : "#ffffff",
+                        fontSize: "1em"
+                    },
                     distance: -30
                 },
                 tickLength: 20,
@@ -75,6 +90,10 @@ const WindRose = function({}){
                 tickInterval: 45,
                 labels: {
                     distance: 25,
+                    style:{
+                        color: theme==='light' ? "#000000" : "#ffffff",
+                        fontSize: "1.5em"
+                    },
                     formatter: function () {
                         var value = compass_labels[this.value]// as keyof typeof compass_labels];
                         return value !== 'undefined' ? value : this.value;
