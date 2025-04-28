@@ -3,6 +3,7 @@
 import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 import HighchartsMore from "highcharts/highcharts-more";
+import { useThemeContext } from "./ThemeContext";
 //import HighchartsSolidGauge  from "highcharts/modules/gauge";
 
 if (typeof Highcharts === 'function') {
@@ -13,23 +14,30 @@ if (typeof Highcharts === 'function') {
 
 
 const WindRose = function({}){
+
+    const {theme} = useThemeContext();
     
     const compass_labels = {180:"N", 225:"NE", 270:"E", 315:"SE", 0:"S", 45:"SW", 90:"W", 135:"NW"};
 
-
-    const chart_options={//:Highcharts.Options={
+    const chart_options={
         chart: {
             type: 'gauge',
             styledMode: false,
-            backgroundColor: "#c8d9c3",
+            backgroundColor: "transparent",
         },
-        title: {text:"Wind Rose"},
+        title: {
+            text:"Wind Rose",
+            style: {
+                color: theme==='light' ? "#000000" : "#ffffff",
+                fontSize: '30px'
+            }
+        },
     
         pane: {
             startAngle: -180,
             endAngle: 180,
             background: [{
-                backgroundColor:'#fafafa',
+                backgroundColor:'transparent',
                 borderRadius: 5,
                 innerRadius: '60%',
                 outerRadius: '100%',
@@ -43,36 +51,36 @@ const WindRose = function({}){
             {
                 min: -180,
                 max: 180,
-                lineColor: '#000000',
-                tickColor: '#000000',
-                minorTickColor: '#000000',
-                lineWidth: 2,
+                lineColor: theme==='light' ? "#000000" : "#ffffff",
+                tickColor: theme==='light' ? "#000000" : "#ffffff",
+                minorTickColor: theme==='light' ? "#000000" : "#ffffff",
+                lineWidth: 5,
                 offset: 5,
                 labels: {
-                    distance: -20
+                    distance: -30
                 },
-                tickLength: 5,
-                minorTickLength: 5,
+                tickLength: 20,
+                minorTickLength: 10,
                 endOnTick: false
             },
             {
                 min: 0,
                 max: 360,
                 tickPosition: 'outside',
-                lineColor: '#000000',
-                tickColor: '#000000',
-                minorTickColor: '#00000',
-                lineWidth: 2,
+                lineColor: theme==='light' ? "#000000" : "#ffffff",
+                tickColor: theme==='light' ? "#000000" : "#ffffff",
+                minorTickColor: theme==='light' ? "#000000" : "#ffffff",
+                lineWidth: 5,
                 offset: 15,
                 tickInterval: 45,
                 labels: {
-                    distance: 10,
+                    distance: 25,
                     formatter: function () {
                         var value = compass_labels[this.value]// as keyof typeof compass_labels];
                         return value !== 'undefined' ? value : this.value;
                     }
                 },
-                tickLength: 5,
+                tickLength: 10,
                 minorTickLength: 5,
                 endOnTick: false
             }
@@ -83,7 +91,7 @@ const WindRose = function({}){
             {
                 //pointStart: 100,
                 data: [-100],
-                color: '#55BF3B',
+                color: theme==='light' ? "#000000" : "#ffffff",
                 tooltip: {
                     valueSuffix: '0 M'
                 },
@@ -100,7 +108,7 @@ const WindRose = function({}){
     };
 
     return (
-        <div className="rounded-xl p-3 bg-[#c8d9c3] dark:bg-teal-900">
+        <div className="rounded-xl p-3 bg-[#024887]/10 dark:bg-teal-900">
         <HighchartsReact highcharts = {Highcharts} options = {chart_options}/> 
         </div>
     )
