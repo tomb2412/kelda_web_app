@@ -19,7 +19,7 @@ if (typeof Highcharts === 'function') {
 
 const WindBarb = () => {
     
-    const {theme} = useThemeContext;
+    const {theme} = useThemeContext();
 
     const [series, setSeries] = useState([]);
     const [error_wind, setError_wind] = useState(null);
@@ -92,30 +92,33 @@ const WindBarb = () => {
             style: { color: "#000000" },
         },
         chart: {
-            backgroundColor: theme==='dark' ? "#004D40" : "#c8d9c3",
+            backgroundColor: "transparent",
         },
         xAxis: [{
             type: 'datetime',
             tickInterval: 2 * 36e5, // two hours
             minorTickInterval: 36e5, // one hour
-            tickLength: 0,
-            gridLineWidth: 1,
-            gridLineColor: 'rgba(128, 128, 128, 0.1)',
-            startOnTick: false,
-            endOnTick: false,
-            minPadding: 0,
-            maxPadding: 0,
-            offset: 30,
-            showLastLabel: true,
-            labels: { format: '{value:%H}' },
-            crosshair: true,
+            tickLength: 10,
+            gridLineWidth: 0,
+            minorGridLineWidth: 0,
+            //gridLineColor: theme==='light' ? "#000000" : "#ffffff",
+            //startOnTick: false,
+            //endOnTick: false,
+            // minPadding: 0,
+            // maxPadding: 0,
+            // offset: 30,
+            // showLastLabel: true,
+            //labels: { format: '{value:%H}' },
+            //crosshair: true,
         }],
         yAxis: [
             {
+                gridLineWidth: 0,
                 title: { text: 'Temperature (°C)' },
                 opposite: false, // Temperature on the left axis
             },
             {
+                gridLineWidth: 0,
                 title: { text: 'Pressure (hPa)' },
                 opposite: true, // Pressure on the right axis
             }
