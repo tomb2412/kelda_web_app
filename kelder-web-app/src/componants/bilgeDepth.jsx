@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import HighchartsReact from 'highcharts-react-official';
 import Highcharts from 'highcharts';
-import lightDarkToggle from './lightDarkToggle'
-
+import { useThemeContext } from './ThemeContext';
 
 const BilgeDepth = function(){
-    const {theme, toggleTheme} = lightDarkToggle()
+    const {theme} = useThemeContext();
 
     const [chart_options, set_chart_options] = useState(
         {

@@ -6,6 +6,8 @@ import HighchartsExporting from 'highcharts/modules/exporting'
 import datagrouping from "highcharts/modules/datagrouping";
 import windbarb from "highcharts/modules/windbarb";
 import axios from 'axios';
+import { useThemeContext } from './ThemeContext';
+
 //import HighchartsSolidGauge from 'highcharts/modules/solid-gauge'
 
 if (typeof Highcharts === 'function') {
@@ -17,14 +19,7 @@ if (typeof Highcharts === 'function') {
 
 const WindBarb = () => {
     
-    const [isDarkMode, setIsDarkMode] = useState(false);
-    
-    useEffect(() => {
-        // Toggling the 'dark' class on the <html> element based on isDarkMode state
-        document.documentElement.classList.toggle('dark', isDarkMode);
-    }, [isDarkMode]);
-
-    const toggleDarkMode = () => setIsDarkMode((prev) => !prev);
+    const {theme} = useThemeContext;
 
     const [series, setSeries] = useState([]);
     const [error_wind, setError_wind] = useState(null);
@@ -97,7 +92,7 @@ const WindBarb = () => {
             style: { color: "#000000" },
         },
         chart: {
-            backgroundColor: isDarkMode ? "#004D40" : "#c8d9c3",
+            backgroundColor: theme==='dark' ? "#004D40" : "#c8d9c3",
         },
         xAxis: [{
             type: 'datetime',

@@ -1,9 +1,11 @@
-import {useEffect, useState} from 'react';
-import HighchartsReact from 'highcharts-react-official';
+import { Children, createContext, useContext, useState, useEffect } from 'react';
 
+const ThemeContext = createContext();
 
-const useTheme = () => {
-    const [theme, setTheme] = useState('dark')
+export const useThemeContext = () => useContext(ThemeContext);
+
+export const ThemeProvider = ({ children }) => {
+    const [theme, setTheme] = useState('dark');
 
     const toggleTheme = () => {
         const newTheme = theme === 'dark' ? 'light' : 'dark';
@@ -22,10 +24,9 @@ const useTheme = () => {
         },[]
     );
 
-    return {
-        theme,
-        toggleTheme,
-    };
+    return (
+        <ThemeContext.Provider value={{ theme, toggleTheme }}>
+            {children}
+        </ThemeContext.Provider>
+    );
 };
-
-export default useTheme;
