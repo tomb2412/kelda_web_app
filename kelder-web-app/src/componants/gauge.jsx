@@ -23,7 +23,13 @@ const Guage = function({}){
             backgroundColor:  "transparent",
         },
     
-        title: {text:"Fuel"},
+        title: {
+            text:"Fuel", 
+            style: {
+                color:theme==='light' ? "#000000" : "#ffffff",
+                fontSize:'30px'
+            }
+        },
     
         pane: {
             startAngle: -90,
@@ -60,7 +66,7 @@ const Guage = function({}){
 
         series: [{
             type: "solidgauge",
-            data: [100],
+            data: [40],
             tooltip: {
                 valueSuffix: '%'
             }
