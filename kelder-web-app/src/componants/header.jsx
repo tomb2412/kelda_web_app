@@ -12,7 +12,6 @@ const Header = () => {
                 <div className="text-slate-900 dark:text-white flex-row flex px-4 text-2xl">
                     <p className="font-bold">Connection Status: </p>
                     <p className="px-4">Kelder Online</p>
-                    <p>Full strength</p>
                 </div>
             </div>
             <div>
