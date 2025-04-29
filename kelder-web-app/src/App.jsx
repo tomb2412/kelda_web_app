@@ -8,6 +8,7 @@ import Guage from "./componants/gauge";
 import WindRose from "./componants/wind_rose";
 import BilgeDepth from './componants/bilgeDepth';
 import GpsDisplay from "./componants/gps";
+import Log from './componants/log';
 
 function App() {
   const [taskList, setTaskList] = useState([]);
@@ -23,6 +24,7 @@ function App() {
         <div className='flex flex-col sm:grid md:grid-cols-2 lg:grid-cols-3 gap-3'>
           <GpsDisplay />
           <DepthGuage />
+          {/* <Log /> */}
           <Guage />
           <WindBarb />
           <WindRose />
