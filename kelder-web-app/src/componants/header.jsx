@@ -7,11 +7,11 @@ const Header = () => {
     const {theme, toggleTheme} = useThemeContext();
 
     return(
-        <header className="flex flex-row items-center justify-between h-15 bg-[#024887]/50 dark:bg-slate-800/90" >
+        <header className="flex flex-row items-center justify-between h-20 bg-[#024887]/50 dark:bg-slate-800/90" >
             <div >
                 <div className="text-slate-900 dark:text-white flex-row flex px-4 text-2xl">
-                    <p className="font-bold">Connection Status: </p>
-                    <p className="px-4">Kelder Online</p>
+                    <p className=""></p>
+                    <p className="font-bold px-4">Kelder Online</p>
                 </div>
             </div>
             <div>
