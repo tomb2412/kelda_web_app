@@ -135,8 +135,8 @@ const WindRose = function({}){
             </div>
             <HighchartsReact highcharts = {Highcharts} options = {chart_options}/> 
             <div className="flex flex-row items-center justify-between">
-                <p className = "text-2xl text-slate-900 dark:text-white font-bold">TWD: 335</p>
-                <p className = "text-2xl text-slate-900 dark:text-white font-bold">AWD: 260</p> 
+                <p className = "text-2xl text-slate-900 dark:text-white font-bold">TWA: 335</p>
+                <p className = "text-2xl text-slate-900 dark:text-white font-bold">AWA: 260</p> 
             </div>
         </div>
     )
