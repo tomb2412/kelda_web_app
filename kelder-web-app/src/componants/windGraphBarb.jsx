@@ -29,18 +29,42 @@ const WindBarb = () => {
     useEffect(() => {
         const requestWindyData = async () => {
             try {
+                const today = new Date();
+                const start_time = new Date(today.getFullYear(), today.getMonth(), today.getDay(), 5,0,0);
+                const end_time = new Date(today.getFullYear(), today.getMonth(), today.getDay(), 21,0,0);
+
                 const response = await axios.get("https://api.open-meteo.com/v1/forecast?latitude=52.1964531&longitude=-2.221358&hourly=temperature_2m,pressure_msl,wind_speed_10m,wind_direction_10m,rain,wind_gusts_10m&models=ukmo_seamless&forecast_days=1");
 
                 console.log("API response:", response.data);
 
-                const timestamps = response.data.hourly.time.map(t => new Date(t).getTime());
-                const temperatureSeries = timestamps.map((ts, i) => ({ x: ts, y: response.data.hourly.temperature_2m[i] }));
-                const pressureSeries = timestamps.map((ts, i) => ({ x: ts, y: response.data.hourly.pressure_msl[i] }));
+                const timestamps = response.data.hourly.time.map(t => new Date(t).getTime()).filter(
+                    ([timestamp,_]) => {
+                        const date = new Date(timestamp);
+                        return date >= start_time && date <= end_time
+                    }
+                );
+                const temperatureSeries = timestamps.map((ts, i) => ({ x: ts, y: response.data.hourly.temperature_2m[i] })).filter(
+                    ([timestamp,_]) => {
+                        const date = new Date(timestamp);
+                        return date >= start_time && date <= end_time
+                    }
+                );
+                const pressureSeries = timestamps.map((ts, i) => ({ x: ts, y: response.data.hourly.pressure_msl[i] })).filter(
+                    ([timestamp,_]) => {
+                        const date = new Date(timestamp);
+                        return date >= start_time && date <= end_time
+                    }
+                );
                 const windSeries = timestamps.map((ts, i) => ({
                     x: ts, // Convert time string to timestamp (milliseconds)
                     value: response.data.hourly.wind_speed_10m[i],
                     direction: response.data.hourly.wind_direction_10m[i],
-                  }));
+                  })).filter(
+                    ([timestamp,_]) => {
+                        const date = new Date(timestamp);
+                        return date >= start_time && date <= end_time
+                    }
+                );
 
                 // Log the individual series
                 console.log("Temperature Series:", temperatureSeries);
@@ -101,15 +125,6 @@ const WindBarb = () => {
             tickLength: 10,
             gridLineWidth: 0,
             minorGridLineWidth: 0,
-            //gridLineColor: theme==='light' ? "#000000" : "#ffffff",
-            //startOnTick: false,
-            //endOnTick: false,
-            // minPadding: 0,
-            // maxPadding: 0,
-            // offset: 30,
-            // showLastLabel: true,
-            //labels: { format: '{value:%H}' },
-            //crosshair: true,
         }],
         yAxis: [
             {
