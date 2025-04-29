@@ -35,6 +35,7 @@ const WindRose = function({}){
         },
     
         pane: {
+            size: "80%",
             startAngle: -180,
             endAngle: 180,
             background: [{
@@ -128,7 +129,15 @@ const WindRose = function({}){
 
     return (
         <div className="rounded-xl p-3 bg-[#024887]/10 dark:bg-teal-900">
-        <HighchartsReact highcharts = {Highcharts} options = {chart_options}/> 
+            <div className="flex flex-row items-center justify-between">
+                <p className = "text-2xl text-slate-900 dark:text-white font-bold">TWS: 10.2</p>
+                <p className = "text-2xl text-slate-900 dark:text-white font-bold">AWS: 13.3</p> 
+            </div>
+            <HighchartsReact highcharts = {Highcharts} options = {chart_options}/> 
+            <div className="flex flex-row items-center justify-between">
+                <p className = "text-2xl text-slate-900 dark:text-white font-bold">TWD: 335</p>
+                <p className = "text-2xl text-slate-900 dark:text-white font-bold">AWD: 260</p> 
+            </div>
         </div>
     )
 }
