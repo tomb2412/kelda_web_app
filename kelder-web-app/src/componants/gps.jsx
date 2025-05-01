@@ -4,7 +4,19 @@ import axios from 'axios';
 
 const GpsDisplay = function({}){
 
-    const [gpsData, setGpsData] = useState(null);
+    const [gpsData, setGpsData] = useState(
+        {
+            timestamp: "2025.05.01T08:22:23",
+            latitude_fmt: "12°45\"59.11\'",
+            longitude_fmt: "12°45\"59.11\'",
+            speed_over_ground: "4.3",
+            drift_on_tack: "1.0",
+            distance_covered: "10.2",
+            distance_to_lauren: "5.1",
+            distance_to_cowes: "8.6",
+        }
+
+    );
     const [error, setError] = useState(null);
     
     useEffect(()=> {
@@ -29,13 +41,17 @@ const GpsDisplay = function({}){
     }, []);
 
     return (
-        <div className="flex  flex-col items-center justify-center rounded-xl p-3 bg-[#024887]/10 dark:bg-teal-900">
+        <div className="p-3 bg-[#024887]/10 dark:bg-teal-900">
             {gpsData ? (
-                <div>
+                <div className='flex flex-col grid-cols-2 items-center justify-center rounded-xl '>
                 <p><strong>Time:</strong> {gpsData.timestamp}</p>
                 <p><strong>Latitude:</strong> {gpsData.latitude_fmt}</p>
                 <p><strong>Longitude:</strong> {gpsData.longitude_fmt}</p>
                 <p><strong>Speed over ground:</strong> {gpsData.speed_over_ground} knts</p>
+                <p><strong>Drift on tack</strong> {gpsData.drift_on_tack} knts</p> 
+                <p><strong>Distance covered:</strong> {gpsData.distance_covered} nm</p>
+                <p><strong>Distance to Lauren Marine Services:</strong> {gpsData.distance_to_lauren} nm</p>
+                <p><strong>Distance to Cowes:</strong> {gpsData.distance_to_cowes} nm</p>
                 </div>
             ) : (
                 <p className="text-2xl text-slate-900 dark:text-white">Loading GPS data...</p>
