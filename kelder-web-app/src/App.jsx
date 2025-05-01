@@ -16,7 +16,7 @@ function App() {
   console.log(taskList);
   return (
     <div className='dark:bg-slate-900 bg-white]'>
-        <div className='px-12 py-8 gap-4 '>
+        <div className='px-3 md:px-5 py-8 gap-4 '>
         {/* <div className='flex flex-col items-center justify-center py-8 gap-4'>
           <h1 className='text-xl font-semibold'>02- To Do Board</h1>
           <Input taskList={taskList} setTaskList={setTaskList} />
