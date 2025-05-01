@@ -35,7 +35,7 @@ const WindRose = function({}){
         },
     
         pane: {
-            size: "80%",
+            size: "70%",
             startAngle: -180,
             endAngle: 180,
             background: [{
