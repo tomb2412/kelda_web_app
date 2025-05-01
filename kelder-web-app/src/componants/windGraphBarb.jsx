@@ -21,7 +21,7 @@ const WindBarb = () => {
     
     const {theme} = useThemeContext();
 
-    const [series, setSeries] = useState([]);
+    const [series, setSeries] = useState([[],[],[]]);
     const [error_wind, setError_wind] = useState(null);
     const chartRef = useRef(null);
 
@@ -32,9 +32,6 @@ const WindBarb = () => {
                 const today = new Date();
                 const start_time = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 5,0,0);
                 const end_time = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 21,0,0);
-
-                console.log("Running")
-                console.log(start_time <= end_time)
 
                 const response = await axios.get("https://api.open-meteo.com/v1/forecast?latitude=52.1964531&longitude=-2.221358&hourly=temperature_2m,pressure_msl,wind_speed_10m,wind_direction_10m,rain,wind_gusts_10m&models=ukmo_seamless&forecast_days=1");
 
@@ -59,7 +56,7 @@ const WindBarb = () => {
                     return start_time <= date  && end_time  >= date;
                   });
                 const windSeries = timestamps.map((ts, i) => ({
-                    x: ts, // Convert time string to timestamp (milliseconds)
+                    x: ts,
                     value: response.data.hourly.wind_speed_10m[i],
                     direction: response.data.hourly.wind_direction_10m[i],
                   })).filter(
@@ -69,32 +66,12 @@ const WindBarb = () => {
                     }
                 );
 
-                // Log the individual series
                 console.log("Temperature Series:", temperatureSeries);
                 console.log("Pressure Series:", pressureSeries);
                 console.log("Wind series:", windSeries);
 
-                // Set the series state here, to be passed to Highcharts
-                setSeries([
-                    {
-                        name: "Temperature (2m)",
-                        data: temperatureSeries,
-                        type: 'line',
-                        yAxis: 0,
-                    },
-                    {
-                        name: "Pressure (Surface)",
-                        data: pressureSeries,
-                        type: 'line',
-                        yAxis: 1,
-                    },
-                    {
-                        name: "Wind Barb",
-                        type:'windbarb',
-                        color: "#000000",
-                        data: windSeries,
-                    }
-                ]);
+                // from the usesState hook
+                setSeries([temperatureSeries, pressureSeries, windSeries]);
 
                 // Reset any error message
                 setError_wind(null);
@@ -116,7 +93,7 @@ const WindBarb = () => {
     const chartOptions = {
         title: {
             text: 'Weather Data (Temperature & Pressure)',
-            style: { color: "#000000" },
+            style: {color: theme==='light' ? "#000000" : "#ffffff" },
         },
         chart: {
             backgroundColor: "transparent",
@@ -126,30 +103,58 @@ const WindBarb = () => {
             tickInterval: 2 * 36e5, // two hours
             minorTickInterval: 36e5, // one hour
             tickLength: 10,
+            lineColor: theme==='light' ? "#000000" : "#ffffff",
             gridLineWidth: 0,
             minorGridLineWidth: 0,
+            labels: {style: { color : theme==='light' ? "#000000" : "#ffffff"}}
         }],
         yAxis: [
             {
                 gridLineWidth: 0,
-                title: { text: 'Temperature (°C)' },
+                lineColor: theme==='light' ? "#000000" : "#ffffff",
+                title: { text: 'Temperature (°C)' , color : theme==='light' ? "#000000" : "#ffffff"},
                 opposite: false, // Temperature on the left axis
+                labels: {style: { color : theme==='light' ? "#000000" : "#ffffff"}}
             },
             {
                 gridLineWidth: 0,
+                lineColor: theme==='light' ? "#000000" : "#ffffff",
                 title: { text: 'Pressure (hPa)' },
                 opposite: true, // Pressure on the right axis
+                labels: {style: { color : theme==='light' ? "#000000" : "#ffffff"}}
             }
         ],
-        series: series, // Dynamically updated series
+        series: [
+            {
+                name: "Temperature (2m)",
+                data: series[0],
+                type: 'line',
+                yAxis: 0,
+                color: theme==='light' ? "#257373" : "#45d9d9",
+            },
+            {
+                name: "Pressure (Surface)",
+                data: series[1],
+                type: 'line',
+                yAxis: 1,
+                color: theme==='light' ? "#407325" : "#73d43f",
+            },
+            {
+                name: "Wind Barb",
+                type:'windbarb',
+                data: series[2],
+                color: theme==='light' ? "#000000" : "#ffffff",
+
+            }
+        ], // Dynamically updated series
     };
 
     return (
         <div className="rounded-xl p-3 bg-[#024887]/10 dark:bg-teal-900">
-            {series.length > 0 ? (
+            {series[0].length > 0 ? (
                 <HighchartsReact highcharts={Highcharts} options={chartOptions} ref={chartRef} />
             ) : (
-                <p className="text-2xl text-slate-900 dark:text-white">Loading weather data...</p>
+                <p className="text-2xl text-slate-900 dark:text-white text-center align-middle">Loading weather data...</p>
             )}
             {error_wind && <p className="text-red-500 font-bold text-3xl text-center align-middle">{error_wind}</p>}
         </div>
