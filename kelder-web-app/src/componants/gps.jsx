@@ -41,7 +41,7 @@ const GpsDisplay = function({}){
     }, []);
 
     return (
-        <div className="p-3 bg-[#024887]/10 dark:bg-teal-900">
+        <div className="p-3 rounded-xl bg-[#024887]/10 dark:bg-teal-900">
             {gpsData ? (
                 <div className='flex flex-col grid-cols-2 items-center justify-center rounded-xl '>
                 <p><strong>Time:</strong> {gpsData.timestamp}</p>
