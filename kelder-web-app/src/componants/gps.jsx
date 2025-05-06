@@ -11,6 +11,7 @@ const GpsDisplay = function({}){
             longitude_fmt: "12°45\"59.11\'",
             speed_over_ground: "4.3",
             drift_on_tack: "1.0",
+            cross_track_error: "0.28",
             distance_covered: "10.2",
             distance_to_lauren: "5.1",
             distance_to_cowes: "8.6",
@@ -29,7 +30,7 @@ const GpsDisplay = function({}){
                 setError(null);
             } catch (err) {
                 console.log("Error fetching GPS data: ", err);
-                setError("Error fetching GPS data");
+                setError(null);//"Error fetching GPS data");
             }
         };
 
@@ -43,15 +44,30 @@ const GpsDisplay = function({}){
     return (
         <div className="p-3 rounded-xl bg-[#024887]/10 dark:bg-teal-900">
             {gpsData ? (
-                <div className='flex flex-col grid-cols-2 items-center justify-center rounded-xl '>
-                <p><strong>Time:</strong> {gpsData.timestamp}</p>
-                <p><strong>Latitude:</strong> {gpsData.latitude_fmt}</p>
-                <p><strong>Longitude:</strong> {gpsData.longitude_fmt}</p>
-                <p><strong>Speed over ground:</strong> {gpsData.speed_over_ground} knts</p>
-                <p><strong>Drift on tack</strong> {gpsData.drift_on_tack} knts</p> 
-                <p><strong>Distance covered:</strong> {gpsData.distance_covered} nm</p>
-                <p><strong>Distance to Lauren Marine Services:</strong> {gpsData.distance_to_lauren} nm</p>
-                <p><strong>Distance to Cowes:</strong> {gpsData.distance_to_cowes} nm</p>
+                <div>
+                    <div className='flex flex-row items-center justify-around p-5'>
+                        <p className="text-slate-900 dark:text-white text-xl" ><strong>Timestamp:</strong> {gpsData.timestamp}</p>
+                        <p className="text-slate-900 dark:text-white text-xl" ><strong>Latitude:</strong> {gpsData.latitude_fmt}</p>
+                        <p className="text-slate-900 dark:text-white text-xl" ><strong>Longitude:</strong> {gpsData.longitude_fmt}</p>
+                    </div>
+                    <div className='grid grid-rows-2 grid-cols-2 gap-4 p-5'> 
+                        <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-10">
+                            <p className = "font-semibold  text-3xl">SOG</p>
+                            <p className = "font-bold text-5xl"> {gpsData.speed_over_ground} knts</p>
+                        </div>
+                        <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-10">
+                            <p className = "font-semibold text-3xl">LOG</p>
+                            <p className = "font-bold text-5xl"> {gpsData.distance_covered} nm</p>
+                        </div>
+                        <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-10">
+                            <p className = "font-semibold text-3xl">Drift</p>
+                            <p className = "font-bold text-5xl"> {gpsData.drift_on_tack} knts</p>
+                        </div>
+                        <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-10">
+                            <p className = "font-semibold text-3xl">XTE</p>
+                            <p className = "font-bold text-5xl">  {gpsData.cross_track_error} nm</p>
+                        </div>
+                    </div>
                 </div>
             ) : (
                 <p className="text-2xl text-slate-900 dark:text-white">Loading GPS data...</p>

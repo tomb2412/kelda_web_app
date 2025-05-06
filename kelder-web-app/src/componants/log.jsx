@@ -7,6 +7,8 @@ const Log = function(){
             <p className="text-left text-3xl">Ships Log</p>
             <h1 className="flex row-span-4 items-center justify-center text-9xl font-sans font-semibold"></h1>
             <p className="text-right text-7xl p-3"></p>
+            <p><strong>Distance to Lauren Marine Services:</strong> {gpsData.distance_to_lauren} nm</p>
+                        <p><strong>Distance to Cowes:</strong> {gpsData.distance_to_cowes} nm</p>
         </div>
     )
 }
