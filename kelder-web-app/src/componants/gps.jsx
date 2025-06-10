@@ -46,18 +46,18 @@ const GpsDisplay = function({}){
         <div className="p-3 rounded-xl bg-[#024887]/10 dark:bg-teal-900">
             {gpsData ? (
                 <div>
-                    <div className='flex flex-row sm:grid sm:grid-cols-2 2xl:grid-cols-3 items-center justify-around p-5'>
-                        <div className="sm:col-span-2 2xl:col-span-1 text-slate-900 dark:text-white text-center" >
-                            <p className='font-semibold'>Timestamp</p> 
-                            <p className='font-bold text-2xl sm:text-3xl'>{gpsData.timestamp.split("T")[1]}</p>
+                    <div className='flex flex-row grid grid-cols-2 2xl:grid-cols-3 items-center justify-around p-5'>
+                        <div className="col-span-2 2xl:col-span-1 text-slate-900 dark:text-white text-center" >
+                            <p className='font-semibold text-2xl lg:text-xl'>Timestamp</p> 
+                            <p className='font-bold text-2xl sm:text-3xl lg:text-2xl'>{gpsData.timestamp.split("T")[1]}</p>
                         </div>
-                        <div className="sm:col-span-1 text-slate-900 dark:text-white text-center" >
-                            <p className='font-semibold'>Latitude</p>
-                            <p className='font-bold text-2xl sm:text-3xl'>{gpsData.latitude_fmt}</p>
+                        <div className="col-span-1 text-slate-900 dark:text-white text-center" >
+                            <p className='font-semibold text-2xl lg:text-xl'>Latitude</p>
+                            <p className='font-bold text-3xl sm:text-3xl lg:text-2xl'>{gpsData.latitude_fmt}</p>
                         </div>
-                        <div className="sm:col-span-1 text-slate-900 dark:text-white text-center" >
-                            <p className='font-semibold'>Longitude</p>
-                            <p className='font-bold text-2xl sm:text-3xl'>{gpsData.longitude_fmt}</p>
+                        <div className="col-span-1 text-slate-900 dark:text-white text-center" >
+                            <p className='font-semibold text-2xl lg:text-xl'>Longitude</p>
+                            <p className='font-bold text-3xl sm:text-3xl lg:text-2xl'>{gpsData.longitude_fmt}</p>
                         </div>
                     </div>
                     <div className='grid grid-rows-2 grid-cols-2 gap-4 p-5'> 
