@@ -111,6 +111,7 @@ const WindRose = function({}){
                 minorTickColor: theme==='light' ? "#000000" : "#ffffff",
                 lineWidth: 5,
                 offset: 5,
+                tickPositions: [-135,-90,-45,0,45,90,135,180],
                 labels: {
                     style:{
                         color: theme==='light' ? "#000000" : "#ffffff",
