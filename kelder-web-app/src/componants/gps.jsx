@@ -46,8 +46,8 @@ const GpsDisplay = function({}){
         <div className="p-3 rounded-xl bg-[#024887]/10 dark:bg-teal-900">
             {gpsData ? (
                 <div>
-                    <div className='flex flex-row sm:grid sm:grid-cols-2 xl:grid-cols-3 items-center justify-around p-5'>
-                        <div className="sm:col-span-2 xl:col-span-1 text-slate-900 dark:text-white text-center" >
+                    <div className='flex flex-row sm:grid sm:grid-cols-2 2xl:grid-cols-3 items-center justify-around p-5'>
+                        <div className="sm:col-span-2 2xl:col-span-1 text-slate-900 dark:text-white text-center" >
                             <p className='font-semibold'>Timestamp</p> 
                             <p className='font-bold text-2xl sm:text-3xl'>{gpsData.timestamp.split("T")[1]}</p>
                         </div>
