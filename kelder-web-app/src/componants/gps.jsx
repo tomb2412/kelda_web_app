@@ -10,9 +10,9 @@ const GpsDisplay = function({}){
             timestamp: "2025.05.01T08:22:23",
             latitude_fmt: "12°45\"59\'",
             longitude_fmt: "12°45\"59\'",
-            speed_over_ground: "4.3",
+            instantaneous_speed_over_ground: "4.3",
             drift_on_tack: "1.0",
-            cross_track_error: "0.28",
+            heading_over_ground: "178",
             distance_covered: "10.2",
             distance_to_lauren: "5.1",
             distance_to_cowes: "8.6",
@@ -74,8 +74,8 @@ const GpsDisplay = function({}){
                             <p className = "font-bold text-5xl"> {gpsData.drift_on_tack} knts</p>
                         </div>
                         <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
-                            <p className = "font-semibold text-3xl">XTE</p>
-                            <p className = "font-bold text-5xl">  {gpsData.cross_track_error} nm</p>
+                            <p className = "font-semibold text-3xl">HOG</p>
+                            <p className = "font-bold text-5xl">  {gpsData.heading_over_ground}°</p>
                         </div>
                     </div>
                 </div>
