@@ -1,9 +1,10 @@
 "use client";
-
+import React, {useState, useEffect} from 'react';
 import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 import HighchartsMore from "highcharts/highcharts-more";
 import { useThemeContext } from "./ThemeContext";
+import axios from 'axios';
 //import HighchartsSolidGauge  from "highcharts/modules/gauge";
 
 if (typeof Highcharts === 'function') {
@@ -11,13 +12,55 @@ if (typeof Highcharts === 'function') {
     //HighchartsSolidGauge(Highcharts);
 }
 
+const directionLabels = {
+  "180": "N",
+  "225": "NE",
+  "270": "E",
+  "315": "SE",
+  "0": "S",
+  "45": "SW",
+  "90": "W",
+  "135": "NW"
+};
+
+function rotateCompassLabels(heading) {
+  const rotated = {};
+  for (const angle in directionLabels) {
+    const adjusted = (parseInt(angle) - heading + 360) % 360;
+    rotated[adjusted] = directionLabels[angle];
+  }
+  return rotated;
+}
 
 
 const WindRose = function({}){
-
     const {theme} = useThemeContext();
+
+    const [compassHeading, setCompassHeading] = useState({heading: 0,});
+    const [error, setError] = useState(null);
+
+    useEffect(()=> {
+        const requestCompassData = async () => {
+            try {
+                const response = await axios.get("http://192.168.1.167:8000/compass_heading");
+                console.log(response.data);
+                setCompassHeading(response.data);
+                setError(null);
+            } catch (err) {
+                console.log("Error fetching compass data: ", err);
+                setError(null);//"Error fetching GPS data");
+            }
+        };
+
+        requestCompassData(); // On startup
+
+        const interval = setInterval(requestCompassData, 2000);
+
+        return () => clearInterval(interval);
+    }, []);
     
-    const compass_labels = {180:"N", 225:"NE", 270:"E", 315:"SE", 0:"S", 45:"SW", 90:"W", 135:"NW"};
+    const compass_labels = rotateCompassLabels(compassHeading.heading);
+    console.log(compass_labels)
 
     const chart_options={
         chart: {
@@ -88,6 +131,7 @@ const WindRose = function({}){
                 minorTickColor: theme==='light' ? "#000000" : "#ffffff",
                 lineWidth: 5,
                 offset: 15,
+                tickPositions: Object.keys(compass_labels),
                 tickInterval: 45,
                 labels: {
                     distance: 25,
@@ -131,7 +175,7 @@ const WindRose = function({}){
         <div className="rounded-xl p-3 bg-[#024887]/10 dark:bg-teal-900">
             <div className="flex flex-row items-center justify-between">
                 <p className = "text-2xl text-slate-900 dark:text-white font-bold">TWS: 10.2</p>
-                <p className = "text-6xl text-slate-900 dark:text-white font-bold">000°</p>
+                <p className = "text-6xl text-slate-900 dark:text-white font-bold">{String(compassHeading.heading).padStart(3, '0')}°</p>
                 <p className = "text-2xl text-slate-900 dark:text-white font-bold">AWS: 13.3</p> 
             </div>
             <HighchartsReact highcharts = {Highcharts} options = {chart_options}/> 
