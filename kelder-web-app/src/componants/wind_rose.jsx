@@ -36,7 +36,7 @@ function rotateCompassLabels(heading) {
 const WindRose = function({}){
     const {theme} = useThemeContext();
 
-    const [compassHeading, setCompassHeading] = useState({heading: 0,});
+    const [compassHeading, setCompassHeading] = useState({heading: 50,});
     const [error, setError] = useState(null);
 
     useEffect(()=> {
