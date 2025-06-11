@@ -13,7 +13,7 @@ const GpsDisplay = function({}){
             instantaneous_speed_over_ground: "4.3",
             drift_on_tack: "1.0",
             heading_over_ground: "178",
-            distance_covered: "10.2",
+            log_distance: "10.2",
             distance_to_lauren: "5.1",
             distance_to_cowes: "8.6",
         }
@@ -24,7 +24,7 @@ const GpsDisplay = function({}){
     useEffect(()=> {
         const requestGpsData = async () => {
             try {
-                const response = await axios.get("http://raspberrypi.local:8000/gps_coords");
+                const response = await axios.get("http://192.168.1.167:8000/gps_coords")//"http://raspberrypi.local:8000/gps_coords");//
                 console.log(response.data);
                 setGpsData(response.data);
 
@@ -49,7 +49,7 @@ const GpsDisplay = function({}){
                     <div className='flex flex-row grid grid-cols-2 2xl:grid-cols-3 items-center justify-around p-5'>
                         <div className="col-span-2 2xl:col-span-1 text-slate-900 dark:text-white text-center" >
                             <p className='font-semibold text-2xl lg:text-xl'>Timestamp</p> 
-                            <p className='font-bold text-2xl sm:text-3xl lg:text-2xl'>{gpsData.timestamp.split("T")[1]}</p>
+                            <p className='font-bold text-2xl sm:text-3xl lg:text-2xl'>{gpsData.timestamp.slice(0,-1)}</p>
                         </div>
                         <div className="col-span-1 text-slate-900 dark:text-white text-center" >
                             <p className='font-semibold text-2xl lg:text-xl'>Latitude</p>
@@ -67,15 +67,15 @@ const GpsDisplay = function({}){
                         </div>
                         <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
                             <p className = "font-semibold text-3xl">LOG</p>
-                            <p className = "font-bold text-5xl"> {gpsData.distance_covered} nm</p>
+                            <p className = "font-bold text-5xl"> {gpsData.log_distance} nm</p>
                         </div>
                         <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
                             <p className = "font-semibold text-3xl">Drift</p>
                             <p className = "font-bold text-5xl"> {gpsData.drift_on_tack} knts</p>
                         </div>
                         <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
-                            <p className = "font-semibold text-3xl">HOG</p>
-                            <p className = "font-bold text-5xl">  {gpsData.heading_over_ground}°</p>
+                            <p className = "font-semibold text-3xl">XTE</p>
+                            <p className = "font-bold text-5xl"> {gpsData.cross_track_error}nm</p>
                         </div>
                     </div>
                 </div>

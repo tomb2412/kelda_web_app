@@ -42,7 +42,7 @@ const WindRose = function({}){
     useEffect(()=> {
         const requestCompassData = async () => {
             try {
-                const response = await axios.get("http://192.168.1.167:8000/compass_heading");
+                const response = await axios.get("http://192.168.1.167:8000/compass_heading");//"http://raspberrypi.local:8000/compass_heading");
                 console.log(response.data);
                 setCompassHeading(response.data);
                 setError(null);
