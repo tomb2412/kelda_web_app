@@ -6,9 +6,10 @@ import DepthGuage from "./componants/depth";
 import WindBarb from "./componants/windGraphBarb";
 import Guage from "./componants/gauge";
 import WindRose from "./componants/wind_rose";
-import BilgeDepth from './componants/bilgeDepth';
+import PassagePlan from './componants/passagePlan';
 import GpsDisplay from "./componants/gps";
 import Log from './componants/log';
+import FloatingChat from "./componants/chatBot";
 
 function App() {
   const [taskList, setTaskList] = useState([]);
@@ -28,7 +29,8 @@ function App() {
           {/* <Log /> */}
           <Guage />
           <WindBarb />
-          <BilgeDepth />
+          <PassagePlan />
+          <FloatingChat/>
         </div>
   
         <div className='flex flex-col gap-4 sm:grid grid-cols-3 py-3 px-3 sm:px-8 md:px-10 lg:px-12'>
