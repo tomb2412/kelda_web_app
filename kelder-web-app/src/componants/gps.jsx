@@ -49,7 +49,7 @@ const GpsDisplay = function({}){
                     <div className='flex flex-row grid grid-cols-2 2xl:grid-cols-3 items-center justify-around p-5'>
                         <div className="col-span-2 2xl:col-span-1 text-slate-900 dark:text-white text-center" >
                             <p className='font-semibold text-2xl lg:text-xl'>Timestamp</p> 
-                            <p className='font-bold text-2xl sm:text-3xl lg:text-2xl'>{gpsData.timestamp.slice(0,-1)}</p>
+                            <p className='font-bold text-2xl sm:text-3xl lg:text-2xl'>{gpsData.timestamp.slice(11)}</p>
                         </div>
                         <div className="col-span-1 text-slate-900 dark:text-white text-center" >
                             <p className='font-semibold text-2xl lg:text-xl'>Latitude</p>

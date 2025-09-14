@@ -78,15 +78,6 @@ export default function FloatingChat() {
                                     return null;
                                 }
                             })}
-
-                            {(status === 'submitted' || status === 'streaming') && (
-                            <div>
-                            {status === 'submitted' && <Spinner />}
-                            <button type="button" onClick={() => stop()}>
-                                Stop
-                            </button>
-                            </div>
-                        )}
                             </div>
                         ))}
                         </div>
