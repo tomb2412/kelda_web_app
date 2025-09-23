@@ -31,8 +31,20 @@ export default function FloatingChat() {
         {open ? 'Close Chat' : 'Open Chat'}
     </button>
         {open && (
-            <div className='fixed bottom-20 right-20 w-[350px] h-[500px] bg-[#E8EDF3] border border-yellow-400 border-3 dark:bg-zinc-900 shadow-m rounded-md min-h-[300px] flex flex-col'>
-                <div className='w-full bg-yellow-400 py-1 pl-4 font-semibold text-xl flex-shrink-0'>Control Panel</div>
+            <div className='fixed bottom-20 right-20 w-md h-3/4 bg-[#E8EDF3] border border-yellow-400 border-3 dark:bg-zinc-900 shadow-m rounded-md min-h-[300px] flex flex-col'>
+                <div className='flex flex-row items-center justify-between w-full bg-yellow-400 py-1 pl-4 font-semibold text-xl flex-shrink-0'>
+                    <div>
+                    Control Panel
+                    </div>
+                    <div>
+                        <button
+                            onClick={() => setOpen(false)}
+                            className='text-black font-bold mx-5 px-2 pb-0.25 rounded-full bg-[#E8EDF3] border-2'
+                        >
+                        X
+                        </button>
+                    </div>
+                </div>
                 <div className='px-2 pb-2 min-h-0 flex flex-col flex-1'>
                     <div className="flex flex-col flex-1 overflow-y-auto w-full max-w-md py-2 space-y-2">
                         {messages.map(message => (
