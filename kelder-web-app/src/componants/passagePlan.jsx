@@ -15,14 +15,14 @@ const BilgeDepth = function(){
                 {
                     name: "Cowes Yacht Haven (departure)",
                     coordinates: "50°45.3'N, 001°18.3'W",
-                    bearing: "270°T",
+                    bearing: "270",
                     distance_nm: 3.7,
                     eta: "10:37 BST",
                 },
                 {
                     name: "Mid-Solent (off Gurnard) waypoint",
                     coordinates: "50°45.0'N, 001°24.0'W",
-                    bearing: "272°T",
+                    bearing: "272",
                     distance_nm: 2.9,
                     eta: "11:06 BST",
                 },
@@ -35,21 +35,20 @@ const BilgeDepth = function(){
             try {
                 const response = {
                     timestamp: '2025-09-10T09:00:00Z',
-                    title: 'Cowes to Yarmouth (Isle of Wight) – Day Skipper passage plan (2025-09-11)',
+                    departure_place_name: 'Cowes',
+                    desination_place_name: 'Yarmouth (Isle of Wight)',
                     course_to_steer: [
                         {
                             name: "Cowes Yacht Haven (departure)",
                             coordinates: "50°45.3'N, 001°18.3'W",
-                            bearing: "270°T",
+                            bearing: "270",
                             distance_nm: 3.7,
-                            eta: "10:37 BST",
                         },
                         {
                             name: "Mid-Solent (off Gurnard) waypoint",
                             coordinates: "50°45.0'N, 001°24.0'W",
-                            bearing: "272°T",
+                            bearing: "272",
                             distance_nm: 2.9,
-                            eta: "11:06 BST",
                         },
                         ]
                     }//await axios.get("http://localhost:8000/passage_plan");
@@ -69,21 +68,34 @@ const BilgeDepth = function(){
 
     return (
         <div className="rounded-xl p-3 bg-slate-200 dark:bg-teal-900">
-            <div className=''>
-                <span className="text-left text-3xl font-semibold">Passage Plan</span>
-                <div>{passagePlan.title}</div>
-                <div>Waypoints</div>
-                <ul>
+            <span className="text-left mt-5 text-3xl font-semibold">Passage Plan: {passagePlan.departure_place_name} to {passagePlan.desination_place_name}</span>
+            <div className="w-full overflow-y-auto max-h-64">
+                <table className="min-w-full table-auto border-collapse"> 
+                    <colgroup>
+                        <col className="w-1/2" />
+                        <col className="w-1/3" />
+                        <col className="w-1/6" />
+                        <col className="w-1/6" />
+                    </colgroup>
+                    <thead>
+                        <tr className="sticky top-0 bg-transparent">
+                        <th className="px-4 py-2 text-center">Waypoint</th>
+                        <th className="px-4 py-2 text-center">Coordinates</th>
+                        <th className="px-1 py-2 text-center">Distance (nm)</th>
+                        <th className="px-1 py-2 text-center">Bearing (°T)</th>
+                    </tr>
+                    </thead>
+                    <tbody>
                     {passagePlan.course_to_steer.map((waypoint, index) => (
-                        <li key={index}>
-                            <strong>{waypoint.name}</strong>
-                            <div>Coordinates: {waypoint.coordinates}</div>
-                            <div>Bearing: {waypoint.bearing}</div>
-                            <div>Distance (nm): {waypoint.distance_nm}</div>
-                            <div>ETA: {waypoint.eta}</div>
-                        </li>
+                        <tr key={waypoint.id} className="even:bg-transparent odd:bg-transparent">
+                            <td className="px-4 py-2 text-center"><strong>{waypoint.name}</strong></td>
+                            <td className="px-4 py-2 text-center">{waypoint.coordinates}</td>
+                            <td className="px-1 py-2 text-center">{waypoint.distance_nm}</td>
+                            <td className="px-1 py-2 text-center">{waypoint.bearing}</td>
+                        </tr>
                     ))}
-                </ul>
+                    </tbody>
+                </table>
             </div>
         </div>
     )
