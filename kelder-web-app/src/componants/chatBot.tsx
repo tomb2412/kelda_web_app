@@ -39,9 +39,9 @@ export default function FloatingChat() {
                     <div>
                         <button
                             onClick={() => setOpen(false)}
-                            className='text-black font-bold mx-5 px-2 pb-0.25 rounded-full bg-[#E8EDF3] border-2'
+                            className='text-yellow-400 font-bold mx-5 px-1.75 rounded-full bg-black border-2'
                         >
-                        X
+                        ✖
                         </button>
                     </div>
                 </div>
