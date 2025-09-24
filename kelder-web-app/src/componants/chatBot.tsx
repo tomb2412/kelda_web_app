@@ -11,8 +11,8 @@ import 'highlight.js/styles/github.css';
 export default function FloatingChat() {
   const { messages, sendMessage, status } = useChat({
         transport: new DefaultChatTransport({
-            api: "http://localhost:8000/chat_stream",
-        }), // Make sure this matches your endpoint path
+            api: `${import.meta.env.VITE_KELDER_API_URL}/chat_stream`,
+        }), 
         onError: (error) => {
         console.error('Chat error:', error);
         },

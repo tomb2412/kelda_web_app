@@ -1,6 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import HighchartsReact from 'highcharts-react-official';
-import Highcharts from 'highcharts';
+import { useState, useEffect } from 'react';
 import { useThemeContext } from './ThemeContext';
 import axios from 'axios';
 
@@ -51,7 +49,7 @@ const BilgeDepth = function(){
                             distance_nm: 2.9,
                         },
                         ]
-                    }//await axios.get("http://localhost:8000/passage_plan");
+                    } // await axios.get(`${import.meta.env.VITE_KELDER_API_URL}/passage_plan`);
                 setPassagePlan(response)
                 console.log(response)
             } catch (error) {

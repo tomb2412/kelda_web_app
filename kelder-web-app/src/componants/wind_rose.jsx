@@ -42,7 +42,7 @@ const WindRose = function({}){
     useEffect(()=> {
         const requestCompassData = async () => {
             try {
-                const response = await axios.get("http://192.168.1.167:8000/compass_heading");//"http://raspberrypi.local:8000/compass_heading");
+                const response = await axios.get(`${import.meta.env.VITE_KELDER_API_URL}/compass_heading`);//"http://raspberrypi.local:8000/compass_heading");
                 console.log(response.data);
                 setCompassHeading(response.data);
                 setError(null);
@@ -176,7 +176,10 @@ const WindRose = function({}){
         <div className="rounded-xl p-3 bg-[#024887]/10 dark:bg-teal-900">
             <div className="flex flex-row items-center justify-between">
                 <p className = "text-2xl text-slate-900 dark:text-white font-bold">TWS: 10.2</p>
-                <p className = "text-6xl text-slate-900 dark:text-white font-bold">{String(compassHeading.heading).padStart(3, '0')}°</p>
+                <div>
+                    <p className = "text-6xl text-slate-900 dark:text-white font-bold">{String(compassHeading.heading).padStart(3, '0')}°</p>
+                    <p className = "text-2xl text-center text-slate-900 dark:text-white font-bold">{String(compassHeading.heading).padStart(3, '0')}°</p>
+                </div>
                 <p className = "text-2xl text-slate-900 dark:text-white font-bold">AWS: 13.3</p> 
             </div>
             <HighchartsReact highcharts = {Highcharts} options = {chart_options}/> 

@@ -24,7 +24,7 @@ const GpsDisplay = function({}){
     useEffect(()=> {
         const requestGpsData = async () => {
             try {
-                const response = await axios.get("http://192.168.1.167:8000/gps_coords")//"http://raspberrypi.local:8000/gps_coords");//
+                const response = await axios.get(`${import.meta.env.VITE_KELDER_API_URL}/gps_coords`);//"http://raspberrypi.local:8000/gps_coords");//
                 console.log(response.data);
                 setGpsData(response.data);
 
@@ -70,11 +70,11 @@ const GpsDisplay = function({}){
                             <p className = "font-bold text-5xl"> {gpsData.log_distance} nm</p>
                         </div>
                         <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
-                            <p className = "font-semibold text-3xl">Drift</p>
+                            <p className = "font-semibold text-3xl">XTS</p>
                             <p className = "font-bold text-5xl"> {gpsData.drift_on_tack} knts</p>
                         </div>
                         <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
-                            <p className = "font-semibold text-3xl">XTE</p>
+                            <p className = "font-semibold text-3xl">DTW</p>
                             <p className = "font-bold text-5xl"> {gpsData.cross_track_error}nm</p>
                         </div>
                     </div>
