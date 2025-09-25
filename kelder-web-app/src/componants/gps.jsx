@@ -2,11 +2,10 @@ import React, {useState, useEffect} from 'react';
 import axios from 'axios';
 
 
-
 const GpsDisplay = function({}){
 
-    const [gpsData, setGpsData] = useState(
-        {
+    let back_up_data_model = {
+        data : {
             timestamp: "2025.05.01T08:22:23",
             latitude_fmt: "12°45\"59\'",
             longitude_fmt: "12°45\"59\'",
@@ -17,21 +16,22 @@ const GpsDisplay = function({}){
             distance_to_lauren: "5.1",
             distance_to_cowes: "8.6",
         }
+    };
 
-    );
+    const [gpsData, setGpsData] = useState(back_up_data_model);
     const [error, setError] = useState(null);
     
     useEffect(()=> {
         const requestGpsData = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_KELDER_API_URL}/gps_coords`);//"http://raspberrypi.local:8000/gps_coords");//
+                const response = back_up_data_model;//await axios.get(`${import.meta.env.VITE_KELDER_API_URL}/gps_coords_latest`);//"http://raspberrypi.local:8000/gps_coords");//
                 console.log(response.data);
                 setGpsData(response.data);
-
                 setError(null);
             } catch (err) {
                 console.log("Error fetching GPS data: ", err);
-                setError(null);//"Error fetching GPS data");
+                setError("Error fetching GPS data");
+                setGpsData(back_up_data_model) // TODO: Remove when live
             }
         };
 
@@ -41,6 +41,8 @@ const GpsDisplay = function({}){
 
         return () => clearInterval(interval);
     }, []);
+
+    
 
     return (
         <div className="p-3 rounded-xl bg-[#024887]/10 dark:bg-teal-900">

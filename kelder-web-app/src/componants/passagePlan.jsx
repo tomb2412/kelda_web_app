@@ -2,54 +2,36 @@ import { useState, useEffect } from 'react';
 import { useThemeContext } from './ThemeContext';
 import axios from 'axios';
 
-const BilgeDepth = function(){
+const PassagePlan = function(){
     const {theme} = useThemeContext();
 
-    const [passagePlan, setPassagePlan] = useState(
-        {
-            timestamp: '2025-09-10T09:00:00Z',
-            title: 'Cowes to Yarmouth (Isle of Wight) – Day Skipper passage plan (2025-09-11)',
-            course_to_steer: [
-                {
-                    name: "Cowes Yacht Haven (departure)",
-                    coordinates: "50°45.3'N, 001°18.3'W",
-                    bearing: "270",
-                    distance_nm: 3.7,
-                    eta: "10:37 BST",
-                },
-                {
-                    name: "Mid-Solent (off Gurnard) waypoint",
-                    coordinates: "50°45.0'N, 001°24.0'W",
-                    bearing: "272",
-                    distance_nm: 2.9,
-                    eta: "11:06 BST",
-                },
-                ]
-            }
-    );
+    let mock_response_model = {
+        timestamp: '2025-09-10T09:00:00Z',
+        title: 'Cowes to Yarmouth (Isle of Wight) – Day Skipper passage plan (2025-09-11)',
+        course_to_steer: [
+            {
+                name: "Cowes Yacht Haven (departure)",
+                coordinates: "50°45.3'N, 001°18.3'W",
+                bearing: "270",
+                distance_nm: 3.7,
+                eta: "10:37 BST",
+            },
+            {
+                name: "Mid-Solent (off Gurnard) waypoint",
+                coordinates: "50°45.0'N, 001°24.0'W",
+                bearing: "272",
+                distance_nm: 2.9,
+                eta: "11:06 BST",
+            },
+        ]
+    };
+
+
+    const [passagePlan, setPassagePlan] = useState(mock_response_model);
 
     useEffect(() => {
         const requestPassagePlan = async () => {
-            try {
-                const response = {
-                    timestamp: '2025-09-10T09:00:00Z',
-                    departure_place_name: 'Cowes',
-                    desination_place_name: 'Yarmouth (Isle of Wight)',
-                    course_to_steer: [
-                        {
-                            name: "Cowes Yacht Haven (departure)",
-                            coordinates: "50°45.3'N, 001°18.3'W",
-                            bearing: "270",
-                            distance_nm: 3.7,
-                        },
-                        {
-                            name: "Mid-Solent (off Gurnard) waypoint",
-                            coordinates: "50°45.0'N, 001°24.0'W",
-                            bearing: "272",
-                            distance_nm: 2.9,
-                        },
-                        ]
-                    } // await axios.get(`${import.meta.env.VITE_KELDER_API_URL}/passage_plan`);
+            try {mock_response_model // await axios.get(`${import.meta.env.VITE_KELDER_API_URL}/passage_plan`);
                 setPassagePlan(response)
                 console.log(response)
             } catch (error) {
@@ -85,7 +67,7 @@ const BilgeDepth = function(){
                     </thead>
                     <tbody>
                     {passagePlan.course_to_steer.map((waypoint, index) => (
-                        <tr key={waypoint.id} className="even:bg-transparent odd:bg-transparent">
+                        <tr key={index} className="even:bg-transparent odd:bg-transparent">
                             <td className="px-4 py-2 text-center"><strong>{waypoint.name}</strong></td>
                             <td className="px-4 py-2 text-center">{waypoint.coordinates}</td>
                             <td className="px-1 py-2 text-center">{waypoint.distance_nm}</td>
@@ -99,4 +81,4 @@ const BilgeDepth = function(){
     )
 }
 
-export default BilgeDepth
+export default PassagePlan
