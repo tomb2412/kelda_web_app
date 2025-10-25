@@ -2,3 +2,24 @@
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+@layer components {
+  .vercel-loading-dots {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 0.35rem;
+  }
+
+  .vercel-loading-dots .dot {
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 9999px;
+    background-color: var(--loader-dot-color, #1f2937);
+    animation: vercel-loading-dot-bounce 1.2s infinite ease-in-out both;
+  }
+}
+
+@keyframes vercel-loading-dot-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+  30% { transform: translateY(-0.3rem); opacity: 1; }
+}

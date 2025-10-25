@@ -2,11 +2,23 @@
 
 import { useChat } from '@ai-sdk/react';
 import { TextStreamChatTransport , DefaultChatTransport} from 'ai';
-import { useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github.css';
+
+function LoadingDots({ className = '', color = '#1f2937' }: { className?: string; color?: string }) {
+  const style = { '--loader-dot-color': color } as CSSProperties;
+  return (
+    <span className={`vercel-loading-dots ${className}`} style={style} role="status" aria-live="polite">
+      <span className="sr-only">AI is generating</span>
+      <span className="dot" aria-hidden="true" style={{ animationDelay: '0s' }} />
+      <span className="dot" aria-hidden="true" style={{ animationDelay: '0.2s' }} />
+      <span className="dot" aria-hidden="true" style={{ animationDelay: '0.4s' }} />
+    </span>
+  );
+}
 
 export default function FloatingChat() {
   const { messages, sendMessage, status } = useChat({
@@ -22,6 +34,22 @@ export default function FloatingChat() {
   });
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const hasRenderableText = (message: { parts: Array<{ type: string; text?: string }> }) =>
+    message.parts.some(
+      part => part.type === 'text' && typeof part.text === 'string' && part.text.trim().length > 0,
+    );
+  const isAwaitingResponse = status === 'submitted' || status === 'streaming';
+  const lastMessage = messages[messages.length - 1];
+  const shouldShowLoader = isAwaitingResponse && !(lastMessage?.role === 'assistant' && hasRenderableText(lastMessage));
+
+  useEffect(() => {
+    if (!open || !scrollContainerRef.current) return;
+    scrollContainerRef.current.scrollTo({
+      top: scrollContainerRef.current.scrollHeight,
+      behavior: 'smooth',
+    });
+  }, [messages, shouldShowLoader, open]);
   return (
     <div className="fixed bottom-4 right-4 z-50">
       <button
@@ -46,8 +74,15 @@ export default function FloatingChat() {
                     </div>
                 </div>
                 <div className='px-2 pb-2 min-h-0 flex flex-col flex-1'>
-                    <div className="flex flex-col flex-1 overflow-y-auto w-full max-w-md py-2 space-y-2">
-                        {messages.map(message => (
+                    <div
+                        ref={scrollContainerRef}
+                        className="flex flex-col flex-1 overflow-y-auto w-full max-w-md py-2 space-y-2"
+                    >
+                        {messages.map(message => {
+                            if (message.role !== 'user' && !hasRenderableText(message)) {
+                                return null;
+                            }
+                            return (
                             <div
                             key={message.id}
                             className={`whitespace-pre-wrap break-words hyphens-auto leading-relaxed max-w-[85%] bg-[#8EA3C1]/70 rounded-2xl shadow-xl px-3 py-2 ${
@@ -91,7 +126,12 @@ export default function FloatingChat() {
                                 }
                             })}
                             </div>
-                        ))}
+                        )})}
+                        {shouldShowLoader && (
+                            <div className="max-w-[85%] bg-[#8EA3C1]/50 rounded-2xl shadow-xl px-3 py-2 self-start">
+                                <LoadingDots color="#1f2937" />
+                            </div>
+                        )}
                         </div>
                     <form 
                     className='mt-auto pt-2'
