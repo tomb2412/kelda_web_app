@@ -142,7 +142,7 @@ const WindRose = function({}){
                     },
                     formatter: function () {
                         var value = compass_labels[this.value]// as keyof typeof compass_labels];
-                        return value !== 'undefined' ? value : this.value;
+                        return value !== 'error' ? value : this.value;
                     }
                 },
                 tickLength: 10,
