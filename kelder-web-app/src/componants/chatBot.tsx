@@ -21,7 +21,7 @@ function LoadingDots({ className = '', color = '#1f2937' }: { className?: string
 }
 
 export default function FloatingChat() {
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status, setMessages } = useChat({
         transport: new DefaultChatTransport({
             api: `${import.meta.env.VITE_KELDER_API_URL}/chat_stream`,
         }), 
@@ -34,6 +34,7 @@ export default function FloatingChat() {
   });
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
+  const [isClearing, setIsClearing] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const hasRenderableText = (message: { parts: Array<{ type: string; text?: string }> }) =>
     message.parts.some(
@@ -50,6 +51,28 @@ export default function FloatingChat() {
       behavior: 'smooth',
     });
   }, [messages, shouldShowLoader, open]);
+
+  const handleClearChat = async () => {
+    if (isClearing) {
+        return;
+    }
+
+    try {
+        setIsClearing(true);
+        await fetch(`${import.meta.env.VITE_KELDER_API_URL}/clear_chat`, {
+            method: 'GET',
+            headers: {
+                accept: 'application/json',
+            },
+        });
+        setMessages([]);
+    } catch (err) {
+        console.error('Failed to clear chat history', err);
+    } finally {
+        setIsClearing(false);
+    }
+  }
+
   return (
     <div className="fixed bottom-4 right-4 z-50">
       <button
@@ -61,8 +84,16 @@ export default function FloatingChat() {
         {open && (
             <div className='fixed bottom-20 right-20 w-md h-3/4 bg-[#E8EDF3] border border-yellow-400 border-3 dark:bg-zinc-900 shadow-m rounded-md min-h-[300px] flex flex-col'>
                 <div className='flex flex-row items-center justify-between w-full bg-yellow-400 py-1 pl-4 font-semibold text-xl flex-shrink-0'>
-                    <div>
-                    Control Panel
+                    <div className='flex items-center gap-3'>
+                        <span>Control Panel</span>
+                        <button
+                            type='button'
+                            onClick={handleClearChat}
+                            disabled={isClearing || status !== 'ready'}
+                            className='text-sm font-semibold px-3 py-1 rounded-full bg-black/10 text-black border border-black/30 disabled:opacity-60 disabled:cursor-not-allowed'
+                        >
+                            {isClearing ? 'Clearing...' : 'Clear Chat'}
+                        </button>
                     </div>
                     <div>
                         <button

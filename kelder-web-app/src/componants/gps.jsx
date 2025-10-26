@@ -1,6 +1,27 @@
 import React, {useState, useEffect} from 'react';
 import axios from 'axios';
 
+const formatDdMmSs = (value) => {
+    if (value === null || value === undefined) {
+        return '--';
+    }
+
+    const stringValue = String(value).trim();
+    const direction = (stringValue.match(/[NSEW]/i) || [])[0] || '';
+    const sign = stringValue.startsWith('-') ? '-' : '';
+    const raw = stringValue.replace(/[^0-9]/g, '');
+
+    if (!raw) {
+        return '--';
+    }
+
+    const seconds = raw.slice(-2) || '00';
+    const minutes = raw.slice(-4, -2) || '00';
+    const degrees = raw.slice(0, -4) || '0';
+    const suffix = direction ? ` ${direction.toUpperCase()}` : '';
+
+    return `${sign}${degrees}°${minutes}'${seconds}"${suffix}`;
+};
 
 const GpsDisplay = function({}){
 
@@ -52,11 +73,11 @@ const GpsDisplay = function({}){
                         </div>
                         <div className="col-span-1 text-slate-900 dark:text-white text-center" >
                             <p className='font-semibold text-2xl lg:text-xl'>Latitude</p>
-                            <p className='font-bold text-3xl sm:text-3xl lg:text-2xl'>{gpsData.latitude}</p>
+                            <p className='font-bold text-3xl sm:text-3xl lg:text-2xl'>{formatDdMmSs(gpsData.latitude)}</p>
                         </div>
                         <div className="col-span-1 text-slate-900 dark:text-white text-center" >
                             <p className='font-semibold text-2xl lg:text-xl'>Longitude</p>
-                            <p className='font-bold text-3xl sm:text-3xl lg:text-2xl'>{gpsData.longitude}</p>
+                            <p className='font-bold text-3xl sm:text-3xl lg:text-2xl'>{formatDdMmSs(gpsData.longitude)}</p>
                         </div>
                     </div>
                     <div className='grid grid-rows-2 grid-cols-2 gap-4 p-5'> 

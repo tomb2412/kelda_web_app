@@ -5,46 +5,43 @@ import axios from 'axios';
 const PassagePlan = function(){
     const {theme} = useThemeContext();
 
-    let mock_response_model = {
-        timestamp: '2025-09-10T09:00:00Z',
-        title: 'Cowes to Yarmouth (Isle of Wight) – Day Skipper passage plan (2025-09-11)',
-        course_to_steer: [
-            {
-                name: "Cowes Yacht Haven (departure)",
-                coordinates: "50°45.3'N, 001°18.3'W",
-                bearing: "270",
-                distance_nm: 3.7,
-                eta: "10:37 BST",
-            },
-            {
-                name: "Mid-Solent (off Gurnard) waypoint",
-                coordinates: "50°45.0'N, 001°24.0'W",
-                bearing: "272",
-                distance_nm: 2.9,
-                eta: "11:06 BST",
-            },
-        ]
-    };
-
-
-    const [passagePlan, setPassagePlan] = useState(mock_response_model);
+    const [passagePlan, setPassagePlan] = useState(null);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         const requestPassagePlan = async () => {
-            try {mock_response_model // await axios.get(`${import.meta.env.VITE_KELDER_API_URL}/passage_plan`);
-                setPassagePlan(response)
-                console.log(response)
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_KELDER_API_URL}/passage_plan`);
+                setPassagePlan(response.data);
+                setError(null);
             } catch (error) {
-                console.log("Error recieving the passage plan")
+                console.error("Error receiving the passage plan", error);
+                setError('Unable to load the passage plan right now.');
             }
         }
 
         requestPassagePlan();
-        const interval = setInterval(requestPassagePlan, 2000);
-
-        return () => clearInterval(interval)
-
+        const interval = setInterval(requestPassagePlan, 10000);
+        return () => clearInterval(interval);
     }, []);
+
+    if (error) {
+        return (
+            <div className="rounded-xl p-3 bg-slate-200 dark:bg-teal-900">
+                <span className="text-left mt-5 text-lg font-semibold text-red-600 dark:text-red-300">{error}</span>
+            </div>
+        );
+    }
+
+    if (!passagePlan) {
+        return (
+            <div className="rounded-xl p-3 bg-slate-200 dark:bg-teal-900 animate-pulse">
+                <span className="text-left mt-5 text-lg font-semibold">Loading passage plan…</span>
+            </div>
+        );
+    }
+
+    const waypoints = Array.isArray(passagePlan.course_to_steer) ? passagePlan.course_to_steer : [];
 
     return (
         <div className="rounded-xl p-3 bg-slate-200 dark:bg-teal-900">
@@ -66,7 +63,7 @@ const PassagePlan = function(){
                     </tr>
                     </thead>
                     <tbody>
-                    {passagePlan.course_to_steer.map((waypoint, index) => (
+                    {waypoints.map((waypoint, index) => (
                         <tr key={index} className="even:bg-transparent odd:bg-transparent">
                             <td className="px-4 py-2 text-center"><strong>{waypoint.name}</strong></td>
                             <td className="px-4 py-2 text-center">{waypoint.coordinates}</td>
