@@ -10,6 +10,7 @@ import PassagePlan from './componants/passagePlan';
 import GpsDisplay from "./componants/gps";
 import Log from './componants/log';
 import FloatingChat from "./componants/chatBot";
+import { SignedIn } from '@clerk/clerk-react';
 
 function App() {
   const [taskList, setTaskList] = useState([]);
@@ -30,7 +31,10 @@ function App() {
           <Guage />
           <WindBarb />
           <PassagePlan />
-          <FloatingChat/>
+          <SignedIn>
+            <FloatingChat/>
+          </SignedIn>
+          
         </div>
   
         <div className='flex flex-col gap-4 sm:grid grid-cols-3 py-3 px-3 sm:px-8 md:px-10 lg:px-12'>
