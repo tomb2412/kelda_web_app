@@ -1,5 +1,5 @@
 import {useThemeContext} from './ThemeContext';
-import { SignInButton } from '@clerk/clerk-react';
+import { SignInButton, useUser } from '@clerk/clerk-react';
 import signInIcon from '../assets/sign_in.svg';
 import lightModeIcon from '../assets/light_mode.svg';
 import darkModeIcon from '../assets/dark_mode.svg';
@@ -7,6 +7,7 @@ import darkModeIcon from '../assets/dark_mode.svg';
 const Header = () => {
 
     const {theme, toggleTheme} = useThemeContext();
+    const { isSignedIn } = useUser();
     const isDark = theme === 'dark';
     
     return(
@@ -33,7 +34,8 @@ const Header = () => {
                 <SignInButton mode="modal">
                     <button
                         type="button"
-                        className="flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-slate-900 shadow-sm transition hover:scale-105 hover:bg-white dark:bg-slate-700 dark:text-white"
+                        className={`flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-slate-900 shadow-sm transition dark:bg-slate-700 dark:text-white ${isSignedIn ? 'opacity-40' : 'hover:bg-white hover:scale-105'}`}
+                        aria-disabled={isSignedIn}
                     >
                         <img src={signInIcon} alt="" className="h-6 w-6" />
                         <span className="sr-only">Sign in</span>

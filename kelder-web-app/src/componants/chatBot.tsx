@@ -113,11 +113,11 @@ export default function FloatingChat() {
     <div className="fixed bottom-4 right-4 z-50">
       <button
         onClick={() => setOpen(!open)}
-        className="mb-2 bg-yellow-400 text-black rounded-full shadow w-12 h-12 flex items-center justify-center border border-black/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-yellow-500"
+        className="mb-2 bg-yellow-400 text-black rounded-full shadow w-12 h-12 flex items-center justify-center border border-black/20 transition hover:scale-105 hover:bg-yellow-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-yellow-500"
         aria-label={open ? 'Close chat panel' : 'Open chat panel'}
       >
         <span className="sr-only">{open ? 'Close chat panel' : 'Open chat panel'}</span>
-        {open ? <CloseChatIcon className="w-5 h-5" /> : <OpenChatIcon className="w-5 h-5" />}
+        {open ? <CloseChatIcon className="w-7 h-7" /> : <OpenChatIcon className="w-7 h-7" />}
     </button>
         {open && (
             <div className='fixed bottom-20 right-20 w-md h-3/4 bg-[#E8EDF3] border border-yellow-400 border-3 dark:bg-zinc-900 shadow-m rounded-md min-h-[300px] flex flex-col'>
