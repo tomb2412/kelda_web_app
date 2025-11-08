@@ -5,6 +5,8 @@ import HighchartsReact from "highcharts-react-official";
 import HighchartsMore from "highcharts/highcharts-more";
 import { useThemeContext } from "./ThemeContext";
 import axios from 'axios';
+
+const COMPASS_REFRESH_MS = 2000;
 //import HighchartsSolidGauge  from "highcharts/modules/gauge";
 
 if (typeof Highcharts === 'function') {
@@ -54,7 +56,7 @@ const WindRose = function({}){
 
         requestCompassData(); // On startup
 
-        const interval = setInterval(requestCompassData, 2000);
+        const interval = setInterval(requestCompassData, COMPASS_REFRESH_MS);
 
         return () => clearInterval(interval);
     }, []);

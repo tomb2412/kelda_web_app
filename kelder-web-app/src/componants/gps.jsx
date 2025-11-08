@@ -23,6 +23,14 @@ const formatDdMmSs = (value) => {
     return `${sign}${degrees}°${minutes}'${seconds}"${suffix}`;
 };
 
+const formatSog = (value) => {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) {
+        return '--';
+    }
+    return Math.round(numericValue * 10) / 10;
+};
+
 const GpsDisplay = function({}){
 
     let back_up_data_model = {
@@ -83,7 +91,7 @@ const GpsDisplay = function({}){
                     <div className='grid grid-rows-2 grid-cols-2 gap-4 p-5'> 
                         <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
                             <p className = "font-semibold  text-3xl">SOG</p>
-                            <p className = "font-bold text-5xl"> {Math.round(gpsData.speed_over_ground * 10) / 10} knts</p>
+                            <p className = "font-bold text-5xl"> {formatSog(gpsData.speed_over_ground)} knts</p>
                         </div>
                         <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
                             <p className = "font-semibold text-3xl">LOG</p>

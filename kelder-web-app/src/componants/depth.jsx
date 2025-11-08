@@ -1,6 +1,8 @@
 import {useState, useEffect} from 'react';
 import axios from 'axios';
 
+const BILGE_DEPTH_REFRESH_MS = 2000;
+
 const formatHeight = (value) => {
     if (value === null || value === undefined || value === '') {
         return '--';
@@ -64,6 +66,9 @@ const normalizeHeightResponse = (payload) => {
         if (typeof payload.height_of_tide === 'number') {
             return payload.height_of_tide;
         }
+        if (typeof payload.bilge_depth === 'number') {
+            return payload.bilge_depth;
+        }
         if (typeof payload.value === 'number') {
             return payload.value;
         }
@@ -82,6 +87,7 @@ const DepthGuage = function(){
         event: "HW"
     })
     const [liveHeight, setLiveHeight] = useState(null);
+    const [bilgeDepth, setBilgeDepth] = useState(null);
 
 
     useEffect(()=> {
@@ -122,8 +128,28 @@ const DepthGuage = function(){
         return () => clearInterval(interval);
     }, []);
 
+    useEffect(() => {
+        const requestBilgeDepth = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_KELDER_API_URL}/bilge_depth`);
+                setBilgeDepth(normalizeHeightResponse(response.data));
+            } catch (err) {
+                console.log("Error fetching bilge depth: ", err);
+                setBilgeDepth(null);
+            }
+        };
+
+        requestBilgeDepth();
+
+        const interval = setInterval(requestBilgeDepth, BILGE_DEPTH_REFRESH_MS);
+
+        return () => clearInterval(interval);
+    }, []);
+
     let unit = "m"
     const currentHeightDisplay = formatHeight(liveHeight);
+    const bilgeDepthValue = Number(bilgeDepth);
+    const bilgeDepthDisplay = Number.isFinite(bilgeDepthValue) ? Math.round(bilgeDepthValue * 100) : null;
 
     return(
         <div className="">
@@ -137,10 +163,18 @@ const DepthGuage = function(){
             </div>
             <div>
                 <div className="grid grid-row-6 rounded-xl p-3 bg-[#024887]/10 text-slate-800 dark:bg-teal-900 dark:text-white">
-                <span className="text-left text-3xl font-semibold">Bilge Depth</span>
-                <h1 className="flex row-span-4 items-center justify-center text-9xl font-sans font-bold">12.3</h1>
-                <p className="text-right text-7xl p-3">cm</p>
-            </div>
+                    <span className="text-left text-3xl font-semibold">Bilge Depth</span>
+                    {bilgeDepthDisplay === null ? (
+                        <p className="flex row-span-4 items-center justify-center text-2xl font-semibold text-red-500">
+                            error reading bilge depth
+                        </p>
+                    ) : (
+                        <div className="flex row-span-4 items-center justify-center gap-4">
+                            <h1 className="text-9xl font-sans font-bold">{bilgeDepthDisplay}</h1>
+                            <p className="text-right text-7xl">cm</p>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
         
