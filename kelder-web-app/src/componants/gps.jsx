@@ -31,6 +31,23 @@ const formatSog = (value) => {
     return Math.round(numericValue * 10) / 10;
 };
 
+const formatBasicValue = (value) => {
+    if (value === null || value === undefined) {
+        return '--';
+    }
+
+    const trimmed = String(value).trim();
+    return trimmed.length ? trimmed : '--';
+};
+
+const formatMetric = (value, unit, formatter = formatBasicValue) => {
+    const formatted = formatter(value);
+    if (formatted === '--') {
+        return '--';
+    }
+    return `${formatted} ${unit}`.trim();
+};
+
 const GpsDisplay = function({}){
 
     let back_up_data_model = {
@@ -71,7 +88,7 @@ const GpsDisplay = function({}){
     console.log(gpsData)
 
     return (
-        <div className="p-3 rounded-xl bg-[#024887]/10 dark:bg-teal-900">
+        <div className="p-3 rounded-xl bg-[#024887]/10 dark:bg-sky-95   0">
             {gpsData ? (
                 <div>
                     <div className='flex flex-row grid grid-cols-2 2xl:grid-cols-3 items-center justify-around p-5'>
@@ -91,19 +108,19 @@ const GpsDisplay = function({}){
                     <div className='grid grid-rows-2 grid-cols-2 gap-4 p-5'> 
                         <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
                             <p className = "font-semibold  text-3xl">SOG</p>
-                            <p className = "font-bold text-5xl"> {formatSog(gpsData.speed_over_ground)} knts</p>
+                            <p className = "font-bold text-5xl"> {formatMetric(gpsData.speed_over_ground, 'knts', formatSog)}</p>
                         </div>
                         <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
                             <p className = "font-semibold text-3xl">LOG</p>
-                            <p className = "font-bold text-5xl"> {gpsData.log} nm</p>
+                            <p className = "font-bold text-5xl"> {formatMetric(gpsData.log, 'nm')}</p>
                         </div>
                         <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
                             <p className = "font-semibold text-3xl">Drift</p>
-                            <p className = "font-bold text-5xl"> {gpsData.drift} knts</p>
+                            <p className = "font-bold text-5xl"> {formatMetric(gpsData.drift, 'knts')}</p>
                         </div>
                         <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
                             <p className = "font-semibold text-3xl">DTW</p>
-                            <p className = "font-bold text-5xl"> {gpsData.dtw}nm</p>
+                            <p className = "font-bold text-5xl"> {formatMetric(gpsData.dtw, 'nm')}</p>
                         </div>
                     </div>
                 </div>
