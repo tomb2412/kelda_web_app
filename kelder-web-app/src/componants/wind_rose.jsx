@@ -1,5 +1,5 @@
 "use client";
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 import HighchartsMore from "highcharts/highcharts-more";
@@ -7,6 +7,8 @@ import { useThemeContext } from "./ThemeContext";
 import axios from 'axios';
 
 const COMPASS_REFRESH_MS = 2000;
+const INITIAL_HEADING = 2;
+const ROTATION_ANIMATION_MS = 800;
 //import HighchartsSolidGauge  from "highcharts/modules/gauge";
 
 if (typeof Highcharts === 'function') {
@@ -34,19 +36,39 @@ function rotateCompassLabels(heading) {
   return rotated;
 }
 
+const normalizeAngle = (angle) => {
+  const normalized = angle % 360;
+  return normalized < 0 ? normalized + 360 : normalized;
+};
+
+const shortestAngleDelta = (from, to) => {
+  const current = normalizeAngle(from);
+  const target = normalizeAngle(to);
+  let delta = target - current;
+  if (delta > 180) {
+    delta -= 360;
+  } else if (delta < -180) {
+    delta += 360;
+  }
+  return delta;
+};
 
 const WindRose = function({}){
     const {theme} = useThemeContext();
 
-    const [compassHeading, setCompassHeading] = useState({heading: 217,});
+    const [compassHeading, setCompassHeading] = useState({heading: INITIAL_HEADING});
+    const [displayHeading, setDisplayHeading] = useState(INITIAL_HEADING);
+    const displayedHeadingRef = useRef(INITIAL_HEADING);
+    const chartRef = useRef(null);
+    const animationElementRef = useRef(null);
     const [error, setError] = useState(null);
 
     useEffect(()=> {
         const requestCompassData = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_KELDER_API_URL}/compass_heading`);//"http://raspberrypi.local:8000/compass_heading");
-                console.log(response.data);
-                setCompassHeading(response.data);
+                // const response = await axios.get(`${import.meta.env.VITE_KELDER_API_URL}/compass_heading`);//"http://raspberrypi.local:8000/compass_heading");
+                // console.log(response.data);
+                setCompassHeading({heading: 155});
                 setError(null);
             } catch (err) {
                 console.log("Error fetching compass data: ", err);
@@ -61,8 +83,79 @@ const WindRose = function({}){
         return () => clearInterval(interval);
     }, []);
     
-    const compass_labels = rotateCompassLabels(compassHeading.heading);
-    console.log(compass_labels)
+    useEffect(() => {
+        const chart = chartRef.current?.chart;
+        const targetHeading = compassHeading.heading;
+
+        if (!chart || !chart.renderer) {
+            const normalizedTarget = normalizeAngle(targetHeading);
+            displayedHeadingRef.current = normalizedTarget;
+            setDisplayHeading(normalizedTarget);
+            return;
+        }
+
+        if (!animationElementRef.current) {
+            animationElementRef.current = chart.renderer
+                .rect(0, 0, 0, 0)
+                .attr({ opacity: 0, dummyAngle: displayedHeadingRef.current })
+                .add();
+        }
+
+        const animator = animationElementRef.current;
+        if (animator.stop) {
+            animator.stop();
+        }
+
+        const currentHeading = displayedHeadingRef.current;
+        const targetValue = currentHeading + shortestAngleDelta(currentHeading, targetHeading);
+
+        animator.attr({ dummyAngle: currentHeading });
+        animator.animate(
+            { dummyAngle: targetValue },
+            {
+                duration: ROTATION_ANIMATION_MS,
+                easing: 'easeInOutSine',
+                step: function (value) {
+                    const normalized = normalizeAngle(value);
+                    displayedHeadingRef.current = normalized;
+                    setDisplayHeading(normalized);
+                },
+                complete: function () {
+                    const normalizedTarget = normalizeAngle(targetHeading);
+                    displayedHeadingRef.current = normalizedTarget;
+                    setDisplayHeading(normalizedTarget);
+                }
+            }
+        );
+
+        return () => {
+            if (animator.stop) {
+                animator.stop();
+            }
+        };
+    }, [compassHeading.heading]);
+
+    useEffect(() => {
+        return () => {
+            if (animationElementRef.current) {
+                if (animationElementRef.current.stop) {
+                    animationElementRef.current.stop();
+                }
+                animationElementRef.current.destroy();
+                animationElementRef.current = null;
+            }
+        };
+    }, []);
+    
+    const compass_labels = useMemo(
+        () => rotateCompassLabels(displayHeading),
+        [displayHeading]
+    );
+
+    const tickPositions = useMemo(
+        () => Object.keys(compass_labels).map((key) => Number(key)).sort((a, b) => a - b),
+        [compass_labels]
+    );
 
     const chart_options={
         chart: {
@@ -134,7 +227,7 @@ const WindRose = function({}){
                 minorTickColor: theme==='light' ? "#000000" : "#ffffff",
                 lineWidth: 5,
                 offset: 15,
-                tickPositions: Object.keys(compass_labels),
+                tickPositions,
                 tickInterval: 45,
                 labels: {
                     distance: 25,
@@ -184,7 +277,7 @@ const WindRose = function({}){
                 </div>
                 <p className = "text-2xl text-slate-900 dark:text-white font-bold">AWS: 13.3</p> 
             </div>
-            <HighchartsReact highcharts = {Highcharts} options = {chart_options}/> 
+            <HighchartsReact ref={chartRef} highcharts = {Highcharts} options = {chart_options}/> 
             <div className="flex flex-row items-center justify-between">
                 <p className = "text-2xl text-slate-900 dark:text-white font-bold">TWA: 335°</p>
                 <p className = "text-2xl text-slate-900 dark:text-white font-bold">AWA: 260°</p> 
