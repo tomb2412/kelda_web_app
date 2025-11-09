@@ -47,7 +47,7 @@ const Header = () => {
                     <img
                         src={isDark ? darkModeIcon : lightModeIcon}
                         alt={isDark ? 'Dark mode icon' : 'Light mode icon'}
-                        className="h-7 w-7"
+                        className="h-7 w-7 dark:invert"
                     />
                 </button>
                 <SignInButton mode="modal">
@@ -56,7 +56,7 @@ const Header = () => {
                         className={`flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-slate-900 shadow-sm transition dark:bg-slate-700 dark:text-white ${isSignedIn ? 'opacity-40' : 'hover:bg-white hover:scale-105'}`}
                         aria-disabled={isSignedIn}
                     >
-                        <img src={signInIcon} alt="" className="h-6 w-6" />
+                        <img src={signInIcon} alt="" className="h-6 w-6 dark:invert" />
                         <span className="sr-only">Sign in</span>
                     </button>
                 </SignInButton>
@@ -67,7 +67,7 @@ const Header = () => {
                     className={`flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-slate-900 shadow-sm transition hover:scale-105 hover:bg-white dark:bg-slate-700 dark:text-white ${isRestarting ? 'opacity-50 cursor-not-allowed hover:scale-100' : ''}`}
                     aria-label="Restart service"
                 >
-                    <img src={restartIcon} alt="" className="h-6 w-6" />
+                    <img src={restartIcon} alt="" className="h-6 w-6 dark:invert" />
                 </button>
             </div>
         </header>
