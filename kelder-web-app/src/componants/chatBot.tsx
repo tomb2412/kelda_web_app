@@ -120,7 +120,7 @@ export default function FloatingChat() {
         {open ? <CloseChatIcon className="w-7 h-7" /> : <OpenChatIcon className="w-7 h-7" />}
     </button>
         {open && (
-            <div className='fixed bottom-20 right-20 w-md h-3/4 bg-[#E8EDF3] border border-yellow-400 border-3 dark:bg-zinc-900 shadow-m rounded-md min-h-[300px] flex flex-col'>
+            <div className='fixed bottom-20 right-20 w-md h-3/4 bg-[#E8EDF3] border border-yellow-400 border-3 dark:bg-slate-800 shadow-m rounded-md min-h-[300px] flex flex-col'>
                 <div className='flex flex-row items-center justify-between w-full bg-yellow-400 py-1 pl-4 font-semibold text-xl flex-shrink-0'>
                     <div className='flex items-center gap-3'>
                         <span>Control Panel</span>

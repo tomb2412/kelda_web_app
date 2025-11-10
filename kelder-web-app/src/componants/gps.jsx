@@ -48,20 +48,18 @@ const formatMetric = (value, unit, formatter = formatBasicValue) => {
     return `${formatted} ${unit}`.trim();
 };
 
-const GpsDisplay = function({}){
+const fallbackGpsData = {
+    timestamp: '--',
+    latitude: '--',
+    longitude: '--',
+    speed_over_ground: '--',
+    drift: '--',
+    log: '--',
+    dtw: '--',
+};
 
-    let back_up_data_model = {
-        data : {
-            timestamp: "08:22:23",
-            latitude: "12°45\"59\'",
-            longitude: "12°45\"59\'",
-            speed_over_ground: "4.3",
-            drift: "1.0",
-            log: "10.2",
-            dtw: "8.6",
-        }
-    };
-    const [gpsData, setGpsData] = useState();
+const GpsDisplay = function({}){
+    const [gpsData, setGpsData] = useState(null);
     const [error, setError] = useState(null);
     
     useEffect(()=> {
@@ -87,47 +85,50 @@ const GpsDisplay = function({}){
 
     console.log(gpsData)
 
+    const dataToRender = gpsData ?? fallbackGpsData;
+    const hasData = Boolean(gpsData);
+
     return (
-        <div className="p-3 rounded-xl bg-[#024887]/10 dark:bg-sky-95   0">
-            {gpsData ? (
-                <div>
-                    <div className='flex flex-row grid grid-cols-2 2xl:grid-cols-3 items-center justify-around p-5'>
-                        <div className="col-span-2 2xl:col-span-1 text-slate-900 dark:text-white text-center" >
-                            <p className='font-semibold text-2xl lg:text-xl'>Timestamp</p> 
-                            <p className='font-bold text-2xl sm:text-3xl lg:text-2xl'>{gpsData.timestamp}</p>
-                        </div>
-                        <div className="col-span-1 text-slate-900 dark:text-white text-center" >
-                            <p className='font-semibold text-2xl lg:text-xl'>Latitude</p>
-                            <p className='font-bold text-3xl sm:text-3xl lg:text-2xl'>{formatDdMmSs(gpsData.latitude)}</p>
-                        </div>
-                        <div className="col-span-1 text-slate-900 dark:text-white text-center" >
-                            <p className='font-semibold text-2xl lg:text-xl'>Longitude</p>
-                            <p className='font-bold text-3xl sm:text-3xl lg:text-2xl'>{formatDdMmSs(gpsData.longitude)}</p>
-                        </div>
+        <div className="p-3 rounded-xl bg-[#024887]/10 dark:bg-slate-800/90">
+            <div>
+                <div className='flex flex-row grid grid-cols-2 2xl:grid-cols-3 items-center justify-around p-5'>
+                    <div className="col-span-2 2xl:col-span-1 text-slate-900 dark:text-white text-center" >
+                        <p className='font-semibold text-2xl lg:text-xl'>Timestamp</p> 
+                        <p className='font-bold text-2xl sm:text-3xl lg:text-2xl'>{dataToRender.timestamp}</p>
                     </div>
-                    <div className='grid grid-rows-2 grid-cols-2 gap-4 p-5'> 
-                        <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
-                            <p className = "font-semibold  text-3xl">SOG</p>
-                            <p className = "font-bold text-5xl"> {formatMetric(gpsData.speed_over_ground, 'knts', formatSog)}</p>
-                        </div>
-                        <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
-                            <p className = "font-semibold text-3xl">LOG</p>
-                            <p className = "font-bold text-5xl"> {formatMetric(gpsData.log, 'nm')}</p>
-                        </div>
-                        <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
-                            <p className = "font-semibold text-3xl">Drift</p>
-                            <p className = "font-bold text-5xl"> {formatMetric(gpsData.drift, 'knts')}</p>
-                        </div>
-                        <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
-                            <p className = "font-semibold text-3xl">DTW</p>
-                            <p className = "font-bold text-5xl"> {formatMetric(gpsData.dtw, 'nm')}</p>
-                        </div>
+                    <div className="col-span-1 text-slate-900 dark:text-white text-center" >
+                        <p className='font-semibold text-2xl lg:text-xl'>Latitude</p>
+                        <p className='font-bold text-3xl sm:text-3xl lg:text-2xl'>{formatDdMmSs(dataToRender.latitude)}</p>
+                    </div>
+                    <div className="col-span-1 text-slate-900 dark:text-white text-center" >
+                        <p className='font-semibold text-2xl lg:text-xl'>Longitude</p>
+                        <p className='font-bold text-3xl sm:text-3xl lg:text-2xl'>{formatDdMmSs(dataToRender.longitude)}</p>
                     </div>
                 </div>
-            ) : (
-                <p className="text-2xl text-slate-900 dark:text-white">Loading GPS data...</p>
+                <div className='grid grid-rows-2 grid-cols-2 gap-4 p-5'> 
+                    <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
+                        <p className = "font-semibold  text-3xl">SOG</p>
+                        <p className = "font-bold text-5xl"> {formatMetric(dataToRender.speed_over_ground, 'knts', formatSog)}</p>
+                    </div>
+                    <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
+                        <p className = "font-semibold text-3xl">LOG</p>
+                        <p className = "font-bold text-5xl"> {formatMetric(dataToRender.log, 'nm')}</p>
+                    </div>
+                    <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
+                        <p className = "font-semibold text-3xl">Drift</p>
+                        <p className = "font-bold text-5xl"> {formatMetric(dataToRender.drift, 'knts')}</p>
+                    </div>
+                    <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
+                        <p className = "font-semibold text-3xl">DTW</p>
+                        <p className = "font-bold text-5xl"> {formatMetric(dataToRender.dtw, 'nm')}</p>
+                    </div>
+                </div>
+            </div>
+            {error && (
+                <p className="text-sm text-center mt-2 text-red-500 dark:text-red-300">
+                    {error}
+                </p>
             )}
-            {error && <p className="text-red-500 font-bold text-3xl text-center align-middle">{error}</p>}
         </div>
     )
 }

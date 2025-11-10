@@ -153,7 +153,7 @@ const DepthGuage = function(){
 
     return(
         <div className="">
-            <div className="grid grid-row-6 rounded-xl p-3 bg-[#024887]/10 text-slate-800 dark:bg-teal-900 dark:text-white mb-3">
+            <div className="grid grid-row-6 rounded-xl p-3 bg-[#024887]/10 text-slate-800 dark:bg-slate-800/90 dark:text-white mb-3">
                 <span className="text-3xl text-center font-semibold">{describeTidalEvent(tidal_event)}</span>
                 <div className='flex row-span-4 items-center justify-center'>
                     <h1 className="text-9xl font-sans font-bold">{currentHeightDisplay}</h1>
@@ -162,7 +162,7 @@ const DepthGuage = function(){
                 <span className="text-center text-3xl mt-2 font-semibold ml-3.5">Height of tide</span>
             </div>
             <div>
-                <div className="grid grid-row-6 rounded-xl p-3 bg-[#024887]/10 text-slate-800 dark:bg-teal-900 dark:text-white">
+                <div className="grid grid-row-6 rounded-xl p-3 bg-[#024887]/10 text-slate-800 dark:bg-slate-800/90 dark:text-white">
                     <span className="text-left text-3xl font-semibold">Bilge Depth</span>
                     {bilgeDepthDisplay === null ? (
                         <p className="flex row-span-4 items-center justify-center text-2xl font-semibold text-red-500">

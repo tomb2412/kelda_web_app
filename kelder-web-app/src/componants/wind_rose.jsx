@@ -66,9 +66,9 @@ const WindRose = function({}){
     useEffect(()=> {
         const requestCompassData = async () => {
             try {
-                // const response = await axios.get(`${import.meta.env.VITE_KELDER_API_URL}/compass_heading`);//"http://raspberrypi.local:8000/compass_heading");
-                // console.log(response.data);
-                setCompassHeading({heading: 155});
+                const response = await axios.get(`${import.meta.env.VITE_KELDER_API_URL}/compass_heading`);//"http://raspberrypi.local:8000/compass_heading");
+                console.log(response.data);
+                setCompassHeading(response.data);
                 setError(null);
             } catch (err) {
                 console.log("Error fetching compass data: ", err);
@@ -268,7 +268,7 @@ const WindRose = function({}){
     };
 
     return (
-        <div className="rounded-xl p-3 bg-[#024887]/10 dark:bg-teal-900">
+        <div className="rounded-xl p-3 bg-[#024887]/10 dark:bg-slate-800/90">
             <div className="flex flex-row items-center justify-between">
                 <p className = "text-2xl text-slate-900 dark:text-white font-bold">TWS: 10.2</p>
                 <div>
