@@ -1,24 +1,52 @@
 import { ComposableMap, Geographies, Geography, Graticule, Marker } from "react-simple-maps"
 import solentDataUrl from "../assets/marks,water,land.geojson?url"
 
+const MAP_COLORS = {
+  cardBackgroundTint: "rgba(2, 48, 89, 0.1)",
+  mapBackground: "#f0e9c2",
+  landStroke: "#c2b28f",
+  solentFill: "#1e6fa8",
+  solentStroke: "#0c4b75",
+  graticule: "#000000",
+  coastline: "#f0f4ff",
+  depthContour: "#88b7d0",
+  defaultMarkerFill: "#ffcc00",
+  defaultMarkerStroke: "#000000",
+  markerHighlightStroke: "#ffffff",
+  portMarkerFill: "#a82a1e",
+  starboardMarkerFill: "#0d6e32",
+  cardinalMarkerFill: "#d6a400",
+  specialPurposeFill: "#ffd000",
+  lightFill: "#ffffff",
+  lightStroke: "#f1fa8c",
+  harbourFill: "#4da6ff",
+  harbourStroke: "#003f88",
+  anchorageStroke: "#f0e9c2",
+  landmarkFill: "#b5651d",
+  landmarkStroke: "#4a2e05",
+}
+
 export const SolentChart = () => {
   return (
-    <div className="rounded-xl p-3 bg-[#023059]/10 text-slate-800 dark:bg-slate-800/90 dark:text-white mb-3">
+    <div
+      className="rounded-xl p-3 text-slate-800 dark:bg-slate-800/90 dark:text-white mb-3"
+      style={{ backgroundColor: MAP_COLORS.cardBackgroundTint }}
+    >
       <ComposableMap
         projection="geoMercator"
         projectionConfig={{
-          center: [-1.25, 50.8], // Solent / Southampton Water region
-          scale: 35000,
+          center: [-1.30, 50.8], // Solent / Southampton Water region
+          scale: 90000,
         }}
         style={{
-          background: "#f0e9c2", // deep ocean tone
+          background: MAP_COLORS.mapBackground, // deep ocean tone
           borderRadius: "0.75rem",
           width: "100%",
-          height: "60vh",
+          height: "50vh",
         }}
       >
         {/* Optional grid lines for chart reference */}
-        <Graticule stroke="#000000" strokeWidth={0.3} />
+        <Graticule stroke={MAP_COLORS.graticule} strokeWidth={0.3} />
         
         {/* --- LAND polygons --- */}
         <Geographies geography={solentDataUrl}>
@@ -36,8 +64,8 @@ export const SolentChart = () => {
                 <Geography
                 key={geo.rsmKey}
                 geography={geo}
-                fill="#f0e9c2"
-                stroke="#c2b28f"
+                fill={MAP_COLORS.mapBackground}
+                stroke={MAP_COLORS.landStroke}
                 strokeWidth={0.4}
                 />
             ))
@@ -73,8 +101,8 @@ export const SolentChart = () => {
                 <Geography
                     key={geo.rsmKey}
                     geography={geo}
-                    fill="#1e6fa8"
-                    stroke="#0c4b75"
+                    fill={MAP_COLORS.solentFill}
+                    stroke={MAP_COLORS.solentStroke}
                     strokeWidth={0.4}
                 />
                 )
@@ -117,8 +145,8 @@ export const SolentChart = () => {
                 <Geography
                     key={geo.rsmKey}
                     geography={geo}
-                    fill="#1e6fa8"   // blue sea
-                    stroke="#0c4b75"
+                    fill={MAP_COLORS.solentFill}   // blue sea
+                    stroke={MAP_COLORS.solentStroke}
                     strokeWidth={0.4}
                 />
                 )
@@ -138,7 +166,7 @@ export const SolentChart = () => {
             .map((geo) => {
                 const seamarkType = geo.properties["seamark:type"]
                 const stroke =
-                seamarkType === "depth_contour" ? "#88b7d0" : "#f0f4ff"
+                seamarkType === "depth_contour" ? MAP_COLORS.depthContour : MAP_COLORS.coastline
                 const strokeWidth = seamarkType === "depth_contour" ? 0.6 : 0.8
                 return (
                 <Geography
@@ -184,53 +212,53 @@ export const SolentChart = () => {
                     "landmark",
                 ].includes(type)
                 ) {
-                let fill = "#ffcc00"
-                let stroke = "#000"
+                let fill = MAP_COLORS.defaultMarkerFill
+                let stroke = MAP_COLORS.defaultMarkerStroke
                 let r = 3
                 let shape = "circle"
 
                 // --- Lateral marks ---
                 if (catLateral === "port") {
-                    fill = "#a82a1e" // red
-                    stroke = "#fff"
+                    fill = MAP_COLORS.portMarkerFill // red
+                    stroke = MAP_COLORS.markerHighlightStroke
                 }
                 if (catLateral === "starboard") {
-                    fill = "#0d6e32" // green
-                    stroke = "#fff"
+                    fill = MAP_COLORS.starboardMarkerFill // green
+                    stroke = MAP_COLORS.markerHighlightStroke
                 }
 
                 // --- Cardinal marks ---
                 if (catCardinal) {
-                    fill = "#d6a400"
-                    stroke = "#000"
+                    fill = MAP_COLORS.cardinalMarkerFill
+                    stroke = MAP_COLORS.defaultMarkerStroke
                     shape = "diamond"
                 }
 
                 // --- Special purpose (yellow) ---
                 if (type === "buoy_special_purpose" || type === "beacon_special_purpose") {
-                    fill = "#ffd000"
-                    stroke = "#000"
+                    fill = MAP_COLORS.specialPurposeFill
+                    stroke = MAP_COLORS.defaultMarkerStroke
                     shape = "triangle"
                 }
 
                 // --- Lights ---
                 if (type === "light_minor") {
-                    fill = "#ffffff"
-                    stroke = "#f1fa8c"
+                    fill = MAP_COLORS.lightFill
+                    stroke = MAP_COLORS.lightStroke
                     r = 2
                     shape = "star"
                 }
                 if (type === "light_major") {
-                    fill = "#ffffff"
-                    stroke = "#f1fa8c"
+                    fill = MAP_COLORS.lightFill
+                    stroke = MAP_COLORS.lightStroke
                     r = 3.5
                     shape = "star"
                 }
 
                 // --- Harbour & berth ---
                 if (type === "harbour" || type === "berth") {
-                    fill = "#4da6ff"
-                    stroke = "#003f88"
+                    fill = MAP_COLORS.harbourFill
+                    stroke = MAP_COLORS.harbourStroke
                     r = 3
                     shape = "square"
                 }
@@ -238,19 +266,19 @@ export const SolentChart = () => {
                 // --- Anchorage areas ---
                 if (type === "anchorage") {
                     fill = "none"
-                    stroke = "#f0e9c2"
+                    stroke = MAP_COLORS.anchorageStroke
                     shape = "anchor"
                 }
 
                 // --- Gates & landmarks ---
                 if (type === "gate") {
-                    fill = "#ffffff"
-                    stroke = "#000"
+                    fill = MAP_COLORS.lightFill
+                    stroke = MAP_COLORS.defaultMarkerStroke
                     shape = "gate"
                 }
                 if (type === "landmark") {
-                    fill = "#b5651d"
-                    stroke = "#4a2e05"
+                    fill = MAP_COLORS.landmarkFill
+                    stroke = MAP_COLORS.landmarkStroke
                     shape = "triangle"
                 }
 
@@ -345,8 +373,8 @@ export default SolentChart
         <Geography
           key={geo.rsmKey}
           geography={geo}
-          fill="#f0e9c2" // sand
-          stroke="#c2b28f"
+          fill={MAP_COLORS.mapBackground} // sand
+          stroke={MAP_COLORS.landStroke}
           strokeWidth={0.4}
         />
       ))
@@ -371,8 +399,8 @@ export default SolentChart
         <Geography
           key={geo.rsmKey}
           geography={geo}
-          fill="#1e6fa8" // sea blue
-          stroke="#0c4b75"
+          fill={MAP_COLORS.solentFill} // sea blue
+          stroke={MAP_COLORS.solentStroke}
           strokeWidth={0.4}
         />
       ))
@@ -391,7 +419,7 @@ export default SolentChart
       .map((geo) => {
         const seamarkType = geo.properties["seamark:type"]
         const stroke =
-          seamarkType === "depth_contour" ? "#88b7d0" : "#f0f4ff"
+          seamarkType === "depth_contour" ? MAP_COLORS.depthContour : MAP_COLORS.coastline
         const strokeWidth = seamarkType === "depth_contour" ? 0.6 : 0.8
         return (
           <Geography
