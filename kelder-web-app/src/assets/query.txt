@@ -1,0 +1,30 @@
+[out:json][timeout:180];
+(
+  // --- Seamark features ---
+  node["seamark:type"]({{bbox}});
+  way["seamark:type"]({{bbox}});
+  relation["seamark:type"]({{bbox}});
+
+  // --- Depth contours ---
+  way["seamark:type"="depth_contour"]({{bbox}});
+  relation["seamark:type"="depth_contour"]({{bbox}});
+
+  // --- Land and coastline polygons ---
+  way["natural"="coastline"]({{bbox}});
+  way["natural"="land"]({{bbox}});
+  relation["natural"="land"]({{bbox}});
+
+  // --- General water areas (rivers, lakes, etc.) ---
+  way["natural"="water"]({{bbox}});
+  relation["natural"="water"]({{bbox}});
+
+  // --- Named seas and channels ---
+  relation["place"="sea"]({{bbox}});
+  relation["place"="bay"]({{bbox}});
+  relation["place"="strait"]({{bbox}});
+  relation["name"~"Solent",i]({{bbox}});
+  relation["name"~"English Channel",i]({{bbox}});
+);
+out body;
+>;
+out skel qt;
