@@ -11,6 +11,7 @@ import GpsDisplay from "./componants/gps";
 import Log from './componants/log';
 import FloatingChat from "./componants/chatBot";
 import { SignedIn } from '@clerk/clerk-react';
+import Chart from './componants/map';
 
 function App() {
   const [taskList, setTaskList] = useState([]);
@@ -28,9 +29,10 @@ function App() {
           <WindRose />
           <DepthGuage />
           {/* <Log />  */}
-          <Guage />
+          {/* <Guage /> */}
           <WindBarb />
           <PassagePlan /> 
+          <Chart/>
           <SignedIn>
             <FloatingChat/>
           </SignedIn>
