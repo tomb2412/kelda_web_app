@@ -110,7 +110,7 @@ export default function FloatingChat() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3 sm:gap-4">
       <button
         onClick={() => setOpen(!open)}
         className="mb-2 bg-yellow-400 text-black rounded-full shadow w-12 h-12 flex items-center justify-center border border-black/20 transition hover:scale-105 hover:bg-yellow-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-yellow-500"
@@ -120,7 +120,7 @@ export default function FloatingChat() {
         {open ? <CloseChatIcon className="w-7 h-7" /> : <OpenChatIcon className="w-7 h-7" />}
     </button>
         {open && (
-            <div className='fixed bottom-20 right-20 w-md h-3/4 bg-[#E8EDF3] border border-yellow-400 border-3 dark:bg-slate-800 shadow-m rounded-md min-h-[300px] flex flex-col'>
+            <div className='fixed inset-x-3 bottom-24 sm:bottom-28 sm:right-12 sm:left-auto sm:inset-x-auto w-full sm:w-[26rem] max-w-[calc(100vw-1.5rem)] sm:max-w-none h-[70vh] sm:h-[75vh] min-h-[320px] flex flex-col bg-[#E8EDF3] border border-yellow-400 border-3 dark:bg-slate-800 shadow-m rounded-md'>
                 <div className='flex flex-row items-center justify-between w-full bg-yellow-400 py-1 pl-4 font-semibold text-xl flex-shrink-0'>
                     <div className='flex items-center gap-3'>
                         <span>Control Panel</span>
@@ -154,7 +154,7 @@ export default function FloatingChat() {
                 <div className='px-2 pb-2 min-h-0 flex flex-col flex-1'>
                     <div
                         ref={scrollContainerRef}
-                        className="flex flex-col flex-1 overflow-y-auto w-full max-w-md py-2 space-y-2"
+                        className="flex flex-col flex-1 overflow-y-auto w-full py-2 space-y-2"
                     >
                         {messages.map(message => {
                             if (message.role !== 'user' && !hasRenderableText(message)) {
@@ -222,7 +222,7 @@ export default function FloatingChat() {
                     }
                     }>
                         <input
-                            className="w-full flex-shrink-0 dark:bg-zinc-900 bg-white max-w-md p-2 mb-2 border border-yellow-400 border-1 dark:border-zinc-800 rounded-full shadow-xl text-gray-700 dark:text-gray-200"
+                            className="w-full flex-shrink-0 dark:bg-zinc-900 bg-white p-2 mb-2 border border-yellow-400 border-1 dark:border-zinc-800 rounded-full shadow-xl text-gray-700 dark:text-gray-200"
                             value={input}
                             placeholder="Make a passage plan..."
                             onChange={e => setInput(e.target.value)}
