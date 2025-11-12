@@ -132,7 +132,7 @@ export default function FloatingChat() {
                             disabled={isClearing || status !== 'ready'}
                             aria-label='Clear chat history'
                             aria-busy={isClearing}
-                            className='relative flex items-center justify-center w-10 h-10 rounded-full bg-black text-yellow-400 border border-black/40 shadow disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black'
+                            className='relative flex items-center justify-center w-10 h-10 rounded-full bg-black text-yellow-400 border border-black/40 shadow transition hover:scale-105 hover:bg-black/80 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black'
                         >
                             <span className="sr-only">{isClearing ? 'Clearing chat' : 'Clear chat'}</span>
                             <NewChatIcon className={`w-5 h-5 transition-opacity ${isClearing ? 'opacity-0' : 'opacity-100'}`} />
@@ -144,7 +144,7 @@ export default function FloatingChat() {
                         </button>
                         <button
                             onClick={() => setOpen(false)}
-                            className='flex items-center justify-center w-10 h-10 text-yellow-400 rounded-full bg-black border-2 border-black/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black'
+                            className='flex items-center justify-center w-10 h-10 text-yellow-400 rounded-full bg-black border-2 border-black/60 transition hover:scale-105 hover:bg-black/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black'
                             aria-label='Close chat panel'
                         >
                             <CloseChatIcon className='w-5 h-5' />
