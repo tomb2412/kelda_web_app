@@ -110,18 +110,18 @@ export default function FloatingChat() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3 sm:gap-4">
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-4 sm:gap-5">
       <button
         onClick={() => setOpen(!open)}
-        className="mb-2 bg-yellow-400 text-black rounded-full shadow w-12 h-12 flex items-center justify-center border border-black/20 transition hover:scale-105 hover:bg-yellow-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-yellow-500"
+        className="mb-2 bg-yellow-400 text-black rounded-full shadow w-16 h-16 flex items-center justify-center border border-black/20 transition hover:scale-105 hover:bg-yellow-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-yellow-500"
         aria-label={open ? 'Close chat panel' : 'Open chat panel'}
       >
         <span className="sr-only">{open ? 'Close chat panel' : 'Open chat panel'}</span>
-        {open ? <CloseChatIcon className="w-7 h-7" /> : <OpenChatIcon className="w-7 h-7" />}
+        {open ? <CloseChatIcon className="w-8 h-8" /> : <OpenChatIcon className="w-8 h-8" />}
     </button>
         {open && (
             <div className='fixed inset-x-3 bottom-24 sm:bottom-28 sm:right-12 sm:left-auto sm:inset-x-auto w-full sm:w-[26rem] max-w-[calc(100vw-1.5rem)] sm:max-w-none h-[70vh] sm:h-[75vh] min-h-[320px] flex flex-col bg-[#E8EDF3] border border-yellow-400 border-3 dark:bg-slate-800 shadow-m rounded-md'>
-                <div className='flex flex-row items-center justify-between w-full bg-yellow-400 py-1 pl-4 font-semibold text-xl flex-shrink-0'>
+                <div className='flex flex-row items-center justify-between w-full bg-yellow-400 py-1 pl-5 font-semibold text-2xl flex-shrink-0'>
                     <div className='flex items-center gap-3'>
                         <span>Control Panel</span>
                     </div>
@@ -132,10 +132,10 @@ export default function FloatingChat() {
                             disabled={isClearing || status !== 'ready'}
                             aria-label='Clear chat history'
                             aria-busy={isClearing}
-                            className='relative flex items-center justify-center w-10 h-10 rounded-full bg-black text-yellow-400 border border-black/40 shadow transition hover:scale-105 hover:bg-black/80 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black'
+                            className='relative flex items-center justify-center w-12 h-12 rounded-full bg-black text-yellow-400 border border-black/40 shadow transition hover:scale-105 hover:bg-black/80 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black'
                         >
                             <span className="sr-only">{isClearing ? 'Clearing chat' : 'Clear chat'}</span>
-                            <NewChatIcon className={`w-5 h-5 transition-opacity ${isClearing ? 'opacity-0' : 'opacity-100'}`} />
+                            <NewChatIcon className={`w-6 h-6 transition-opacity ${isClearing ? 'opacity-0' : 'opacity-100'}`} />
                             {isClearing && (
                                 <span className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
                                     <span className="w-4 h-4 border-2 border-yellow-300 border-t-transparent rounded-full animate-spin" />
@@ -144,10 +144,10 @@ export default function FloatingChat() {
                         </button>
                         <button
                             onClick={() => setOpen(false)}
-                            className='flex items-center justify-center w-10 h-10 text-yellow-400 rounded-full bg-black border-2 border-black/60 transition hover:scale-105 hover:bg-black/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black'
+                            className='flex items-center justify-center w-12 h-12 text-yellow-400 rounded-full bg-black border-2 border-black/60 transition hover:scale-105 hover:bg-black/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black'
                             aria-label='Close chat panel'
                         >
-                            <CloseChatIcon className='w-5 h-5' />
+                            <CloseChatIcon className='w-6 h-6' />
                         </button>
                     </div>
                 </div>
