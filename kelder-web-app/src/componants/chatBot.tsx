@@ -1,7 +1,7 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
-import { TextStreamChatTransport , DefaultChatTransport} from 'ai';
+import { DefaultChatTransport } from 'ai';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -11,12 +11,15 @@ import 'highlight.js/styles/github.css';
 function LoadingDots({ className = '', color = '#1f2937' }: { className?: string; color?: string }) {
   const style = { '--loader-dot-color': color } as CSSProperties;
   return (
-    <span className={`vercel-loading-dots ${className}`} style={style} role="status" aria-live="polite">
-      <span className="sr-only">AI is generating</span>
-      <span className="dot" aria-hidden="true" style={{ animationDelay: '0s' }} />
-      <span className="dot" aria-hidden="true" style={{ animationDelay: '0.2s' }} />
-      <span className="dot" aria-hidden="true" style={{ animationDelay: '0.4s' }} />
-    </span>
+    <>
+      <span className={`vercel-loading-dots ${className}`} style={style} role="status" aria-live="polite">
+        <span className="sr-only">AI is generating</span>
+        <span className="dot" aria-hidden="true" style={{ animationDelay: '0s' }} />
+        <span className="dot" aria-hidden="true" style={{ animationDelay: '0.2s' }} />
+        <span className="dot" aria-hidden="true" style={{ animationDelay: '0.4s' }} />
+      </span>
+      <div>loading</div>
+    </>
   );
 }
 
@@ -67,6 +70,13 @@ export default function FloatingChat() {
         onFinish: (message) => {
         console.log('Message finished:', message);
         },
+        onData: (dataPart) => {
+        if (dataPart.type === "data-progress") {
+          const data = dataPart.data.node;
+          const update = data.replace("progress_update:", "");
+          console.log("PROGRESS UPDATE:", update);
+          }
+        }
   });
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
