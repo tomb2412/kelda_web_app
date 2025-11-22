@@ -41,6 +41,17 @@ const normalizeAngle = (angle) => {
   return normalized < 0 ? normalized + 360 : normalized;
 };
 
+const formatHeadingValue = (heading) => {
+  const numericHeading = Number(heading);
+  if (!Number.isFinite(numericHeading)) {
+    return '---';
+  }
+  const normalizedHeading = normalizeAngle(numericHeading);
+  const roundedHeading = Math.round(normalizedHeading);
+  const wrappedHeading = roundedHeading === 360 ? 0 : roundedHeading;
+  return wrappedHeading.toString().padStart(3, '0');
+};
+
 const shortestAngleDelta = (from, to) => {
   const current = normalizeAngle(from);
   const target = normalizeAngle(to);
@@ -149,6 +160,11 @@ const WindRose = function({}){
     
     const compass_labels = useMemo(
         () => rotateCompassLabels(displayHeading),
+        [displayHeading]
+    );
+
+    const formattedHeading = useMemo(
+        () => formatHeadingValue(displayHeading),
         [displayHeading]
     );
 
@@ -272,8 +288,8 @@ const WindRose = function({}){
             <div className="flex flex-row items-center justify-between">
                 <p className = "text-2xl text-slate-900 dark:text-white font-bold">TWS: 10.2</p>
                 <div>
-                    <p className = "text-6xl text-slate-900 dark:text-white font-bold">{String(compassHeading.heading).padStart(3, '0')}°</p>
-                    <p className = "text-2xl text-center text-slate-900 dark:text-white font-bold">{String(compassHeading.heading).padStart(3, '0')}°</p>
+                    <p className = "text-6xl text-slate-900 dark:text-white font-bold">{formattedHeading}°</p>
+                    <p className = "text-2xl text-center text-slate-900 dark:text-white font-bold">{formattedHeading}°</p>
                 </div>
                 <p className = "text-2xl text-slate-900 dark:text-white font-bold">AWS: 13.3</p> 
             </div>
