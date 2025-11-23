@@ -7,6 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github.css';
+import { apiUrl } from '../config/api';
 
 function LoadingDots({
   className = '',
@@ -65,7 +66,7 @@ export default function FloatingChat() {
   const [progressUpdate, setProgressUpdate] = useState('');
   const { messages, sendMessage, status, setMessages } = useChat({
         transport: new DefaultChatTransport({
-            api: `${import.meta.env.VITE_KELDER_API_URL}/chat_stream`,
+            api: apiUrl('/chat_stream'),
         }), 
         onError: (error) => {
         console.error('Chat error:', error);
@@ -110,7 +111,7 @@ export default function FloatingChat() {
 
     try {
         setIsClearing(true);
-        await fetch(`${import.meta.env.VITE_KELDER_API_URL}/chat_clear`, {
+        await fetch(apiUrl('/chat_clear'), {
             method: 'GET',
             headers: {
                 accept: 'application/json',

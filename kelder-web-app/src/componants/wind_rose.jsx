@@ -5,6 +5,7 @@ import HighchartsReact from "highcharts-react-official";
 import HighchartsMore from "highcharts/highcharts-more";
 import { useThemeContext } from "./ThemeContext";
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 
 const COMPASS_REFRESH_MS = 2000;
 const INITIAL_HEADING = 2;
@@ -77,7 +78,7 @@ const WindRose = function({}){
     useEffect(()=> {
         const requestCompassData = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_KELDER_API_URL}/compass_heading`);//"http://raspberrypi.local:8000/compass_heading");
+                const response = await axios.get(apiUrl('/compass_heading'));//"http://raspberrypi.local:8000/compass_heading");
                 console.log(response.data);
                 setCompassHeading(response.data);
                 setError(null);

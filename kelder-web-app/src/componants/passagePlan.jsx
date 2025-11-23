@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useThemeContext } from './ThemeContext';
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 
 const formatDdMmSs = (value) => {
     if (value === null || value === undefined) {
@@ -47,7 +48,7 @@ const PassagePlan = function(){
     useEffect(() => {
         const requestPassagePlan = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_KELDER_API_URL}/passage_plan`);
+                const response = await axios.get(apiUrl('/passage_plan'));
                 setPassagePlan(response.data.passage_plan);
                 setError(null);
             } catch (fetchError) {

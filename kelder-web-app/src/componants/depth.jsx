@@ -1,5 +1,6 @@
 import {useState, useEffect} from 'react';
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 
 const BILGE_DEPTH_REFRESH_MS = 2000;
 
@@ -93,7 +94,7 @@ const DepthGuage = function(){
     useEffect(()=> {
         const requestTidalEvent = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_KELDER_API_URL}/get_next_tidal_event`)
+                const response = await axios.get(apiUrl('/get_next_tidal_event'))
                 console.log(response.data);
                 setTidalEvent(response.data);
 
@@ -114,7 +115,7 @@ const DepthGuage = function(){
     useEffect(() => {
         const requestHeightOfTide = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_KELDER_API_URL}/get_height_of_tide`);
+                const response = await axios.get(apiUrl('/get_height_of_tide'));
                 setLiveHeight(normalizeHeightResponse(response.data));
             } catch (err) {
                 console.log("Error fetching current height of tide: ", err);
@@ -131,7 +132,7 @@ const DepthGuage = function(){
     useEffect(() => {
         const requestBilgeDepth = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_KELDER_API_URL}/bilge_depth`);
+                const response = await axios.get(apiUrl('/bilge_depth'));
                 setBilgeDepth(normalizeHeightResponse(response.data));
             } catch (err) {
                 console.log("Error fetching bilge depth: ", err);

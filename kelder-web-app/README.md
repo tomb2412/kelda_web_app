@@ -38,6 +38,7 @@ The API server defaults to port `5174`. Set `PORT` explicitly if you need a diff
     ```
 
 Configure `VITE_KELDER_API_URL` in `.env` to point to the API origin (e.g. `http://localhost:5174`).
+Set `API_REFRESH_RATE` to control how often (ms) the GPS card polls the API; it defaults to 2000.
 
 ## API Endpoints
 

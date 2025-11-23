@@ -1,5 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 
 const formatDdMmSs = (value) => {
     if (value === null || value === undefined) {
@@ -58,6 +59,12 @@ const fallbackGpsData = {
     dtw: '--',
 };
 
+const DEFAULT_REFRESH_MS = 2000;
+const gpsRefreshMs = (() => {
+    const parsed = Number(import.meta.env.API_REFRESH_RATE);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_REFRESH_MS;
+})();
+
 const GpsDisplay = function({}){
     const [gpsData, setGpsData] = useState(null);
     const [error, setError] = useState(null);
@@ -65,7 +72,7 @@ const GpsDisplay = function({}){
     useEffect(()=> {
         const requestGpsData = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_KELDER_API_URL}/gps_card_data`);//"http://raspberrypi.local:8000/gps_card_data");//back_up_data_model;// 
+                const response = await axios.get(apiUrl('/gps_card_data'));//"http://raspberrypi.local:8000/gps_card_data");//back_up_data_model;// 
                 console.log("Returned GPS data raw: "+ response.data);
                 setGpsData(response.data);
                 setError(null);
@@ -78,7 +85,7 @@ const GpsDisplay = function({}){
 
         requestGpsData(); // On startup
 
-        const interval = setInterval(requestGpsData, 2000);
+        const interval = setInterval(requestGpsData, gpsRefreshMs);
 
         return () => clearInterval(interval);
     }, []);
@@ -107,20 +114,32 @@ const GpsDisplay = function({}){
                 </div>
                 <div className='grid grid-rows-2 grid-cols-2 gap-4 p-5'> 
                     <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
-                        <p className = "font-semibold  text-3xl">SOG</p>
-                        <p className = "font-bold text-5xl"> {formatMetric(dataToRender.speed_over_ground, 'knts', formatSog)}</p>
+                        <p className = "font-semibold text-3xl flex items-baseline gap-2">
+                            <span>SOG</span>
+                            <span className="text-xl font-medium">/knts</span>
+                        </p>
+                        <p className = "font-bold text-5xl"> {formatMetric(dataToRender.speed_over_ground, '', formatSog)}</p>
                     </div>
                     <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
-                        <p className = "font-semibold text-3xl">LOG</p>
-                        <p className = "font-bold text-5xl"> {formatMetric(dataToRender.log, 'nm')}</p>
+                        <p className = "font-semibold text-3xl flex items-baseline gap-2">
+                            <span>LOG</span>
+                            <span className="text-xl font-medium">/nm</span>
+                        </p>
+                        <p className = "font-bold text-5xl"> {formatMetric(dataToRender.log, '')}</p>
                     </div>
                     <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
-                        <p className = "font-semibold text-3xl">Drift</p>
-                        <p className = "font-bold text-5xl"> {formatMetric(dataToRender.drift, 'knts')}</p>
+                        <p className = "font-semibold text-3xl flex items-baseline gap-2">
+                            <span>Drift</span>
+                            <span className="text-xl font-medium">/knts</span>
+                        </p>
+                        <p className = "font-bold text-5xl"> {formatMetric(dataToRender.drift, '')}</p>
                     </div>
                     <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
-                        <p className = "font-semibold text-3xl">DTW</p>
-                        <p className = "font-bold text-5xl"> {formatMetric(dataToRender.dtw, 'nm')}</p>
+                        <p className = "font-semibold text-3xl flex items-baseline gap-2">
+                            <span>DTW</span>
+                            <span className="text-xl font-medium">/nm</span>
+                        </p>
+                        <p className = "font-bold text-5xl"> {formatMetric(dataToRender.dtw, '')}</p>
                     </div>
                 </div>
             </div>
