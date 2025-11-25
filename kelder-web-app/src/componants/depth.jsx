@@ -364,29 +364,29 @@ const DepthGuage = function(){
                     <div className="w-full overflow-y-auto max-h-64">
                         <table className="min-w-full table-auto border-collapse"> 
                             <colgroup>
-                                <col className="w-2/5" />
-                                <col className="w-2/5" />
-                                <col className="w-1/6" />
-                                <col className="w-1/6" />
+                                <col className="w-1/4" />
+                                <col className="w-1/4" />
+                                <col className="w-1/4" />
+                                <col className="w-1/4" />
                             </colgroup>
                             <thead>
                                 <tr className="sticky top-0 bg-transparent">
-                                <th className="px-4 py-2 text-center">Departure</th>
-                                <th className="px-4 py-2 text-center">Arrival</th>
-                                <th className="px-1 py-2 text-center">Distance (nm)</th>
-                                <th className="px-1 py-2 text-center">Duration</th>
+                                <th className="px-2 py-2 text-center">Departure</th>
+                                <th className="px-2 py-2 text-center">Arrival</th>
+                                <th className="px-2 py-2 text-center">Distance (nm)</th>
+                                <th className="px-2 py-2 text-center">Duration</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr className="even:bg-transparent odd:bg-transparent">
-                                    <td className="px-4 py-2 text-center">
+                                    <td className="px-2 py-2 text-center">
                                         <div className="font-semibold">{formatTimestamp(journeyToRender.departure_time)}</div>
                                     </td>
-                                    <td className="px-4 py-2 text-center">
+                                    <td className="px-2 py-2 text-center">
                                         <div className="font-semibold">{formatTimestamp(journeyToRender.arrival_time)}</div>
                                     </td>
-                                    <td className="px-1 py-2 text-center">{formatDistance(journeyToRender.distance_travelled)}</td>
-                                    <td className="px-1 py-2 text-center">{formatDuration(journeyToRender.duration_seconds)}</td>
+                                    <td className="px-2 py-2 text-center">{formatDistance(journeyToRender.distance_travelled)}</td>
+                                    <td className="px-2 py-2 text-center">{formatDuration(journeyToRender.duration_seconds)}</td>
                                 </tr>
                             </tbody>
                         </table>
