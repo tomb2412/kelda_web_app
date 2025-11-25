@@ -133,7 +133,7 @@ export default function FloatingChat() {
         aria-label={open ? 'Close chat panel' : 'Open chat panel'}
       >
         <span className="sr-only">{open ? 'Close chat panel' : 'Open chat panel'}</span>
-        {open ? <CloseChatIcon className="w-8 h-8" /> : <OpenChatIcon className="w-8 h-8" />}
+        {open ? <CloseChatIcon className="w-9 h-9" /> : <OpenChatIcon className="w-9 h-9" />}
     </button>
         {open && (
             <div className='fixed inset-x-3 bottom-24 sm:bottom-28 sm:right-12 sm:left-auto sm:inset-x-auto w-full sm:w-[26rem] max-w-[calc(100vw-1.5rem)] sm:max-w-none h-[70vh] sm:h-[75vh] min-h-[320px] flex flex-col bg-[#E8EDF3] border border-yellow-400 border-3 dark:bg-slate-800 shadow-m rounded-md'>

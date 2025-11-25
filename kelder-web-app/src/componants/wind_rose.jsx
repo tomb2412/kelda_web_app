@@ -10,6 +10,10 @@ import { apiUrl } from '../config/api';
 const COMPASS_REFRESH_MS = 2000;
 const INITIAL_HEADING = 2;
 const ROTATION_ANIMATION_MS = 800;
+const DEFAULT_COMPASS_READING = {
+    heading: INITIAL_HEADING,
+    course_over_ground: INITIAL_HEADING,
+};
 //import HighchartsSolidGauge  from "highcharts/modules/gauge";
 
 if (typeof Highcharts === 'function') {
@@ -68,11 +72,14 @@ const shortestAngleDelta = (from, to) => {
 const WindRose = function({}){
     const {theme} = useThemeContext();
 
-    const [compassHeading, setCompassHeading] = useState({heading: INITIAL_HEADING});
+    const [compassHeading, setCompassHeading] = useState(DEFAULT_COMPASS_READING);
     const [displayHeading, setDisplayHeading] = useState(INITIAL_HEADING);
+    const [displayCog, setDisplayCog] = useState(INITIAL_HEADING);
     const displayedHeadingRef = useRef(INITIAL_HEADING);
+    const displayedCogRef = useRef(INITIAL_HEADING);
     const chartRef = useRef(null);
-    const animationElementRef = useRef(null);
+    const headingAnimationRef = useRef(null);
+    const cogAnimationRef = useRef(null);
     const [error, setError] = useState(null);
 
     useEffect(()=> {
@@ -80,7 +87,12 @@ const WindRose = function({}){
             try {
                 const response = await axios.get(apiUrl('/compass_heading'));//"http://raspberrypi.local:8000/compass_heading");
                 console.log(response.data);
-                setCompassHeading(response.data);
+                const nextHeading = Number(response.data?.heading);
+                const nextCog = Number(response.data?.course_over_ground);
+                setCompassHeading((prev) => ({
+                    heading: Number.isFinite(nextHeading) ? nextHeading : prev.heading,
+                    course_over_ground: Number.isFinite(nextCog) ? nextCog : prev.course_over_ground,
+                }));
                 setError(null);
             } catch (err) {
                 console.log("Error fetching compass data: ", err);
@@ -98,64 +110,97 @@ const WindRose = function({}){
     useEffect(() => {
         const chart = chartRef.current?.chart;
         const targetHeading = compassHeading.heading;
+        const targetCog = compassHeading.course_over_ground;
+
+        const updateInstant = (value, setter, ref) => {
+            if (!Number.isFinite(value)) {
+                return;
+            }
+            const normalizedValue = normalizeAngle(value);
+            ref.current = normalizedValue;
+            setter(normalizedValue);
+        };
 
         if (!chart || !chart.renderer) {
-            const normalizedTarget = normalizeAngle(targetHeading);
-            displayedHeadingRef.current = normalizedTarget;
-            setDisplayHeading(normalizedTarget);
+            updateInstant(targetHeading, setDisplayHeading, displayedHeadingRef);
+            updateInstant(targetCog, setDisplayCog, displayedCogRef);
             return;
         }
 
-        if (!animationElementRef.current) {
-            animationElementRef.current = chart.renderer
-                .rect(0, 0, 0, 0)
-                .attr({ opacity: 0, dummyAngle: displayedHeadingRef.current })
-                .add();
-        }
-
-        const animator = animationElementRef.current;
-        if (animator.stop) {
-            animator.stop();
-        }
-
-        const currentHeading = displayedHeadingRef.current;
-        const targetValue = currentHeading + shortestAngleDelta(currentHeading, targetHeading);
-
-        animator.attr({ dummyAngle: currentHeading });
-        animator.animate(
-            { dummyAngle: targetValue },
-            {
-                duration: ROTATION_ANIMATION_MS,
-                easing: 'easeInOutSine',
-                step: function (value) {
-                    const normalized = normalizeAngle(value);
-                    displayedHeadingRef.current = normalized;
-                    setDisplayHeading(normalized);
-                },
-                complete: function () {
-                    const normalizedTarget = normalizeAngle(targetHeading);
-                    displayedHeadingRef.current = normalizedTarget;
-                    setDisplayHeading(normalizedTarget);
-                }
+        const ensureAnimator = (ref, initialValue, attrKey) => {
+            if (!ref.current) {
+                ref.current = chart.renderer
+                    .rect(0, 0, 0, 0)
+                    .attr({ opacity: 0, [attrKey]: initialValue })
+                    .add();
             }
-        );
+            return ref.current;
+        };
 
-        return () => {
+        const animateAngle = (ref, currentRef, targetValue, attrKey, setter) => {
+            if (!Number.isFinite(targetValue)) {
+                return;
+            }
+
+            const animator = ensureAnimator(ref, currentRef.current, attrKey);
             if (animator.stop) {
                 animator.stop();
             }
+
+            const current = currentRef.current;
+            const target = current + shortestAngleDelta(current, targetValue);
+
+            animator.attr({ [attrKey]: current });
+            animator.animate(
+                { [attrKey]: target },
+                {
+                    duration: ROTATION_ANIMATION_MS,
+                    easing: 'easeInOutSine',
+                    step: function (value, fx) {
+                        const isMatchingProp = !fx || fx.prop === attrKey;
+                        if (!isMatchingProp) {
+                            return;
+                        }
+                        const normalized = normalizeAngle(value);
+                        currentRef.current = normalized;
+                        setter(normalized);
+                    },
+                    complete: function () {
+                        const normalizedTarget = normalizeAngle(targetValue);
+                        currentRef.current = normalizedTarget;
+                        setter(normalizedTarget);
+                    }
+                }
+            );
         };
-    }, [compassHeading.heading]);
+
+        animateAngle(headingAnimationRef, displayedHeadingRef, targetHeading, 'dummyHeading', setDisplayHeading);
+        animateAngle(cogAnimationRef, displayedCogRef, targetCog, 'dummyCog', setDisplayCog);
+
+        return () => {
+            if (headingAnimationRef.current?.stop) {
+                headingAnimationRef.current.stop();
+            }
+            if (cogAnimationRef.current?.stop) {
+                cogAnimationRef.current.stop();
+            }
+        };
+    }, [compassHeading.heading, compassHeading.course_over_ground]);
 
     useEffect(() => {
-        return () => {
-            if (animationElementRef.current) {
-                if (animationElementRef.current.stop) {
-                    animationElementRef.current.stop();
+        const cleanupAnimator = (animatorRef) => {
+            if (animatorRef.current) {
+                if (animatorRef.current.stop) {
+                    animatorRef.current.stop();
                 }
-                animationElementRef.current.destroy();
-                animationElementRef.current = null;
+                animatorRef.current.destroy();
+                animatorRef.current = null;
             }
+        };
+
+        return () => {
+            cleanupAnimator(headingAnimationRef);
+            cleanupAnimator(cogAnimationRef);
         };
     }, []);
     
@@ -169,6 +214,11 @@ const WindRose = function({}){
         [displayHeading]
     );
 
+    const formattedCog = useMemo(
+        () => formatHeadingValue(displayCog),
+        [displayCog]
+    );
+
     const tickPositions = useMemo(
         () => Object.keys(compass_labels).map((key) => Number(key)).sort((a, b) => a - b),
         [compass_labels]
@@ -179,6 +229,11 @@ const WindRose = function({}){
             type: 'gauge',
             styledMode: false,
             backgroundColor: "transparent",
+            spacing: [0, 0, 0, 0],
+            margin: [0, 0, 0, 0],
+        },
+        exporting: {
+            enabled: false,
         },
         title: {
             text:"Wind Rose",
@@ -267,7 +322,7 @@ const WindRose = function({}){
         series: [
             {
                 //pointStart: 100,
-                data: [-100],
+                data: [0],
                 color: theme==='light' ? "#000000" : "#ffffff",
                 tooltip: {
                     valueSuffix: '0 M'
@@ -275,7 +330,7 @@ const WindRose = function({}){
                 colorAxis: "#55BF3B"
             },
             {
-                data: [-30],
+                data: [displayCog],
                 color: '#DF5353',
                 tooltip: {
                     valueSuffix: '0 M'
@@ -286,19 +341,19 @@ const WindRose = function({}){
 
     return (
         <div className="rounded-xl p-3 bg-[#024887]/10 dark:bg-slate-800/90">
-            <div className="flex flex-row items-center justify-between">
-                <p className = "text-2xl text-slate-900 dark:text-white font-bold">TWS: 10.2</p>
+            <div className="flex flex-row items-center justify-center">
+                {/* <p className = "text-2xl text-slate-900 dark:text-white font-bold">TWS: 10.2</p> */}
                 <div>
                     <p className = "text-6xl text-slate-900 dark:text-white font-bold">{formattedHeading}°</p>
-                    <p className = "text-2xl text-center text-slate-900 dark:text-white font-bold">{formattedHeading}°</p>
+                    <p className = "text-2xl text-center text-slate-900 dark:text-white font-bold">{formattedCog}°</p>
                 </div>
-                <p className = "text-2xl text-slate-900 dark:text-white font-bold">AWS: 13.3</p> 
+                {/* <p className = "text-2xl text-slate-900 dark:text-white font-bold">AWS: 13.3</p>  */}
             </div>
             <HighchartsReact ref={chartRef} highcharts = {Highcharts} options = {chart_options}/> 
-            <div className="flex flex-row items-center justify-between">
+            {/* <div className="flex flex-row items-center justify-between">
                 <p className = "text-2xl text-slate-900 dark:text-white font-bold">TWA: 335°</p>
                 <p className = "text-2xl text-slate-900 dark:text-white font-bold">AWA: 260°</p> 
-            </div>
+            </div> */}
         </div>
     )
 }
