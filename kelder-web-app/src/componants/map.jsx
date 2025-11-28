@@ -58,9 +58,7 @@ export const SolentChart = () => {
   }
   return (
     <div
-      className="rounded-xl p-3 text-slate-800 dark:bg-slate-800/90 dark:text-white mb-3"
-      style={{ backgroundColor: MAP_COLORS.cardBackgroundTint }}
-      onWheelCapture={handleWheelCapture}
+      className="rounded-xl p-3 text-slate-800 dark:bg-slate-800/90 bg-[#024887]/10  dark:text-white mb-3"
     >
       <div className="relative">
         <ComposableMap
