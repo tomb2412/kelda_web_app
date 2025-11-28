@@ -198,19 +198,22 @@ const DepthGuage = function(){
     const [bilgeDepth, setBilgeDepth] = useState(null);
     const [latestJourney, setLatestJourney] = useState([]);
     const [journeyLimit, setJourneyLimit] = useState(null);
-    const [journeyCounter, setjourneyCounter] = useState(9);
+    const [journeyCounter, setjourneyCounter] = useState(0);
     const [journeyError, setJourneyError] = useState(null);
 
     const incremementJourneyCounter = async (direction) => {
-        if (direction === "positive"){
-            if (journeyCounter < (journeyLimit+1)){
+        if (direction === "previous"){
+            // Previous means we want to increase the index
+            if (journeyCounter < (journeyLimit-1)){
                 setjourneyCounter(journeyCounter + 1);
             }
-        } else if (direction === "negative"){
-            if (journeyCounter !== 0){
+        } else if (direction === "next"){
+            // Next means more recent and therefore lower index
+            if (journeyCounter > 0){
                 setjourneyCounter(journeyCounter - 1);
             }
         }
+        console.log('The counter: ', journeyCounter, '. The limit: ', journeyLimit)
     };
 
     useEffect(()=> {
@@ -279,7 +282,7 @@ const DepthGuage = function(){
                 },
                     headers: { accept: 'application/json' },
             });
-                console.log(response.data.journeys)
+                console.log('THE RESPONSE FROM THE API: ', response.data.journeys)
                 setLatestJourney(response.data.journeys);
                 if (!journeyLimit){
                     setJourneyLimit(response.data.limit)
@@ -335,15 +338,15 @@ const DepthGuage = function(){
                         <div className="flex items-center gap-3">
                             <button
                                 type="button"
-                                onClick={() => incremementJourneyCounter('positive')}
-                                className={`flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-white/80 text-slate-900 shadow-sm transition dark:border-slate-600 dark:bg-slate-700 dark:text-white ${journeyCounter === journeyLimit+1 ? 'opacity-40' : 'hover:bg-white hover:scale-105'} }`}
+                                onClick={() => incremementJourneyCounter('previous')}
+                                className={`flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-white/80 text-slate-900 shadow-sm transition dark:border-slate-600 dark:bg-slate-700 dark:text-white ${journeyCounter === journeyLimit-1 ? 'opacity-40' : 'hover:bg-white hover:scale-105'} }`}
                                 aria-label="Request previous trip"
                             >
                                 <img src={arrowLeftIcon} alt="" className={`h-8 w-8 dark:invert`} />
                             </button>
                             <button
                                 type="button"
-                                onClick={() => incremementJourneyCounter('negative')}
+                                onClick={() => incremementJourneyCounter('next')}
                                 className={`flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-white/80 text-slate-900 shadow-sm transition dark:border-slate-600 dark:bg-slate-700 dark:text-white ${journeyCounter === 0 ? 'opacity-40' : 'hover:bg-white hover:scale-105'} }`}
                                 aria-label="Request next trip"
                             >
@@ -371,22 +374,22 @@ const DepthGuage = function(){
                             </colgroup>
                             <thead>
                                 <tr className="sticky top-0 bg-transparent">
-                                <th className="px-2 py-2 text-center">Departure</th>
-                                <th className="px-2 py-2 text-center">Arrival</th>
-                                <th className="px-2 py-2 text-center">Distance (nm)</th>
-                                <th className="px-2 py-2 text-center">Duration</th>
+                                <th className="px-1 py-2 text-center">Departure</th>
+                                <th className="px-1 py-2 text-center">Arrival</th>
+                                <th className="px-1 py-2 text-center">Distance (nm)</th>
+                                <th className="px-1 py-2 text-center">Duration</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr className="even:bg-transparent odd:bg-transparent">
-                                    <td className="px-2 py-2 text-center">
+                                    <td className="px-1 py-2 text-center">
                                         <div className="font-semibold">{formatTimestamp(journeyToRender.departure_time)}</div>
                                     </td>
-                                    <td className="px-2 py-2 text-center">
+                                    <td className="px-1 py-2 text-center">
                                         <div className="font-semibold">{formatTimestamp(journeyToRender.arrival_time)}</div>
                                     </td>
-                                    <td className="px-2 py-2 text-center">{formatDistance(journeyToRender.distance_travelled)}</td>
-                                    <td className="px-2 py-2 text-center">{formatDuration(journeyToRender.duration_seconds)}</td>
+                                    <td className="px-1 py-2 text-center">{formatDistance(journeyToRender.distance_travelled)}</td>
+                                    <td className="px-1 py-2 text-center">{formatDuration(journeyToRender.duration_seconds)}</td>
                                 </tr>
                             </tbody>
                         </table>
