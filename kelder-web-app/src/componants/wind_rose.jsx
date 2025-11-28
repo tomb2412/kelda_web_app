@@ -8,7 +8,7 @@ import axios from 'axios';
 import { apiUrl } from '../config/api';
 
 const COMPASS_REFRESH_MS = 2000;
-const INITIAL_HEADING = 2;
+const INITIAL_HEADING = 0;
 const ROTATION_ANIMATION_MS = 800;
 const DEFAULT_COMPASS_READING = {
     heading: INITIAL_HEADING,
