@@ -235,6 +235,9 @@ const WindRose = function({}){
         exporting: {
             enabled: false,
         },
+        tooltip: {
+            enabled: false,
+        },
         title: {
             text:"Wind Rose",
             style: {
@@ -258,6 +261,9 @@ const WindRose = function({}){
         },
         plotOptions: {
             gauge: {
+                dataLabels: {
+                    enabled: false,
+                },
                 dial: {
                     radius: '80%',
                     backgroundColor: theme==='light' ? "#000000" : "#ffffff",
@@ -270,26 +276,6 @@ const WindRose = function({}){
         // the value axis
         yAxis: 
         [
-            {
-                min: -180,
-                max: 180,
-                lineColor: theme==='light' ? "#000000" : "#ffffff",
-                tickColor: theme==='light' ? "#000000" : "#ffffff",
-                minorTickColor: theme==='light' ? "#000000" : "#ffffff",
-                lineWidth: 5,
-                offset: 5,
-                tickPositions: [-135,-90,-45,0,45,90,135,180],
-                labels: {
-                    style:{
-                        color: theme==='light' ? "#000000" : "#ffffff",
-                        fontSize: "1em"
-                    },
-                    distance: -30
-                },
-                tickLength: 20,
-                minorTickLength: 10,
-                endOnTick: false
-            },
             {
                 min: 0,
                 max: 360,
@@ -315,14 +301,35 @@ const WindRose = function({}){
                 tickLength: 10,
                 minorTickLength: 5,
                 endOnTick: false
-            }
+            },
+            {
+                min: -180,
+                max: 180,
+                lineColor: theme==='light' ? "#000000" : "#ffffff",
+                tickColor: theme==='light' ? "#000000" : "#ffffff",
+                minorTickColor: theme==='light' ? "#000000" : "#ffffff",
+                lineWidth: 5,
+                offset: 5,
+                tickPositions: [-135,-90,-45,0,45,90,135,180],
+                labels: {
+                    style:{
+                        color: theme==='light' ? "#000000" : "#ffffff",
+                        fontSize: "1em"
+                    },
+                    distance: -30
+                },
+                tickLength: 20,
+                minorTickLength: 10,
+                endOnTick: false
+            },
         
         ],
 
         series: [
             {
                 //pointStart: 100,
-                data: [0],
+                name: "Heading",
+                data: [(parseInt(displayHeading) - displayHeading + 540) % 360],
                 color: theme==='light' ? "#000000" : "#ffffff",
                 tooltip: {
                     valueSuffix: '0 M'
@@ -330,7 +337,8 @@ const WindRose = function({}){
                 colorAxis: "#55BF3B"
             },
             {
-                data: [displayCog],
+                name: "Course over ground",
+                data: [(parseInt(displayCog) - displayHeading + 540) % 360],
                 color: '#DF5353',
                 tooltip: {
                     valueSuffix: '0 M'
