@@ -12,8 +12,12 @@ import { apiUrl } from '../config/api';
 function LoadingDots({
   className = '',
   color = '#1f2937',
-}: { className?: string; color?: string }) {
-  const style = { '--loader-dot-color': color } as CSSProperties;
+  fontFamily,
+}: { className?: string; color?: string; fontFamily?: string }) {
+  const style = {
+    '--loader-dot-color': color,
+    ...(fontFamily ? { '--loader-dot-font': fontFamily } : {}),
+  } as CSSProperties;
   return (
     <>
       <span className={`vercel-loading-dots ${className}`} style={style} role="status" aria-live="polite">
