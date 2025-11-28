@@ -274,7 +274,6 @@ const DepthGuage = function(){
 
     useEffect(() => {
         const requestLatestJourney = async () => {
-            console.log("THE JOURNEY REQUESTED")
             try {
                 const response = await axios.get(LATEST_JOURNEY_URL,{
                     params: {
@@ -282,14 +281,12 @@ const DepthGuage = function(){
                 },
                     headers: { accept: 'application/json' },
             });
-                console.log('THE RESPONSE FROM THE API: ', response.data.journeys)
                 setLatestJourney(response.data.journeys);
                 if (!journeyLimit){
                     setJourneyLimit(response.data.limit)
                 }
                 setJourneyError(null);
             } catch (err) {
-                console.error('Error fetching latest journey: ', err);
                 setJourneyError('Unable to load previous trip right now.');
             }
         };
