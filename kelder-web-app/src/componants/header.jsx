@@ -108,7 +108,6 @@ const Header = () => {
                                 />
                             </div>
                         ) : null}
-                        <span className="sm:hidden">Kelder</span>
                         <span className="hidden sm:inline">Kelder {displayStatus}</span>
                     </div>
                 </div>
