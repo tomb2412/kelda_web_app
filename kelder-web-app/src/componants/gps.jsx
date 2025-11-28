@@ -24,12 +24,20 @@ const formatDdMmSs = (value) => {
     return `${sign}${degrees}°${minutes}'${seconds}"${suffix}`;
 };
 
-const formatSog = (value) => {
+const formatSpeeds = (value) => {
     const numericValue = Number(value);
-    if (!Number.isFinite(numericValue)) {
+    if (!Number.isFinite(numericValue) | (numericValue === 0)) {
         return '--';
     }
     return Math.round(numericValue * 10) / 10;
+};
+
+const formatDistance = (value) => {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue) | (numericValue === 0)) {
+        return '--';
+    }
+    return Math.round(numericValue * 100) / 100;
 };
 
 const formatBasicValue = (value) => {
@@ -118,21 +126,21 @@ const GpsDisplay = function({}){
                             <span>SOG</span>
                             <span className="text-xl font-medium">/knts</span>
                         </p>
-                        <p className = "font-bold text-5xl"> {formatMetric(dataToRender.speed_over_ground, '', formatSog)}</p>
+                        <p className = "font-bold text-5xl"> {formatMetric(dataToRender.speed_over_ground, '', formatSpeeds)}</p>
                     </div>
                     <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
                         <p className = "font-semibold text-3xl flex items-baseline gap-2">
                             <span>LOG</span>
                             <span className="text-xl font-medium">/nm</span>
                         </p>
-                        <p className = "font-bold text-5xl"> {formatMetric(dataToRender.log, '')}</p>
+                        <p className = "font-bold text-5xl"> {formatMetric(dataToRender.log, '', formatDistance)}</p>
                     </div>
                     <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
                         <p className = "font-semibold text-3xl flex items-baseline gap-2">
                             <span>Drift</span>
                             <span className="text-xl font-medium">/knts</span>
                         </p>
-                        <p className = "font-bold text-5xl"> {formatMetric(dataToRender.drift, '')}</p>
+                        <p className = "font-bold text-5xl"> {formatMetric(dataToRender.drift, '', formatSpeeds)}</p>
                     </div>
                     <div className = "flex flex-col items-center text-slate-900 dark:text-white text-3xl py-5">
                         <p className = "font-semibold text-3xl flex items-baseline gap-2">
