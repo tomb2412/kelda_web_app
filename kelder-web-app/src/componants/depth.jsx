@@ -197,7 +197,7 @@ const DepthGuage = function(){
     const [liveHeight, setLiveHeight] = useState(null);
     const [bilgeDepth, setBilgeDepth] = useState(null);
     const [latestJourney, setLatestJourney] = useState([]);
-    const [journeyLimit, setJourneyLimit] = useState(null);
+    const [journeyLimit, setJourneyLimit] = useState(0);
     const [journeyCounter, setjourneyCounter] = useState(0);
     const [journeyError, setJourneyError] = useState(null);
 
@@ -287,6 +287,7 @@ const DepthGuage = function(){
                 }
                 setJourneyError(null);
             } catch (err) {
+                setJourneyLimit(0)
                 setJourneyError('Unable to load previous trip right now.');
             }
         };
