@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { ComposableMap, Geographies, Geography, Graticule, Marker, ZoomableGroup } from "react-simple-maps"
+import { ComposableMap, Geographies, Geography, Graticule, Line, Marker, ZoomableGroup } from "react-simple-maps"
 import solentDataUrl from "../assets/marks,water,land.geojson?url"
 import { apiUrl } from "../config/api"
 import axios from 'axios';
@@ -37,6 +37,9 @@ const DEFAULT_REFRESH_MS = 2000
 const MARKER_ANIMATION_MS = 800
 const MARKER_ANIMATION_MAX_MS = 1500
 const MARKER_ANIMATION_MIN_MS = 250
+const TRACK_POINT_LIMIT = 500
+const MARKER_BASE_SCALE = 1
+const MARKER_SCALE_FACTOR = 0.12
 
 const normalizeBearing = (value) => {
   const num = Number(value)
@@ -84,6 +87,7 @@ export const SolentChart = () => {
 
   const [gpsData, setGpsData] = useState(null);
   const [animatedCoords, setAnimatedCoords] = useState(null)
+  const [trackCoords, setTrackCoords] = useState([])
   const currentCoordsRef = useRef(null)
   const hasGpsCoordinates =
     Number.isFinite(Number(gpsData?.longitude)) && Number.isFinite(Number(gpsData?.latitude))
@@ -92,6 +96,7 @@ export const SolentChart = () => {
     : null
   const markerRotation = normalizeBearing(gpsData?.cog) ?? 0
   const displayedCoordinates = animatedCoords ?? markerCoordinates
+  const markerScale = MARKER_BASE_SCALE + (MAX_ZOOM - viewport.zoom) * MARKER_SCALE_FACTOR
 
   useEffect(()=> {
     const requestGPSData = async () => {
@@ -156,6 +161,22 @@ export const SolentChart = () => {
         cancelAnimationFrame(animationFrameRef.current)
       }
     }
+  }, [markerCoordinates])
+
+  useEffect(() => {
+    if (!markerCoordinates) return
+
+    setTrackCoords((prev) => {
+      const last = prev[prev.length - 1]
+      if (last && last[0] === markerCoordinates[0] && last[1] === markerCoordinates[1]) {
+        return prev
+      }
+      const next = [...prev, markerCoordinates]
+      if (next.length > TRACK_POINT_LIMIT) {
+        return next.slice(next.length - TRACK_POINT_LIMIT)
+      }
+      return next
+    })
   }, [markerCoordinates])
 
   return (
@@ -484,11 +505,37 @@ export const SolentChart = () => {
               })
               }
           </Geographies>
+          {trackCoords.length > 1 && (
+            <g>
+              {trackCoords.slice(1).map((coord, idx) => (
+                <Line
+                  key={`track-${idx}`}
+                  from={trackCoords[idx]}
+                  to={coord}
+                  stroke="rgba(168, 42, 30, 1)"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              ))}
+              {displayedCoordinates && (
+                <Line
+                  key="track-active"
+                  from={trackCoords[trackCoords.length - 1]}
+                  to={displayedCoordinates}
+                  stroke="rgba(168, 42, 30, 1)"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              )}
+            </g>
+          )}
           {displayedCoordinates && (
             <Marker coordinates={displayedCoordinates}>
               <polygon
                 points="0,-6 7,6, 0,0 -7,6 "
-                transform={`rotate(${markerRotation})`}
+                transform={`rotate(${markerRotation}) scale(${markerScale})`}
                 fill='rgba(168, 42, 30, 1)'
                 stroke='rgba(0, 0, 0, 1)'
                 strokeWidth={1}
