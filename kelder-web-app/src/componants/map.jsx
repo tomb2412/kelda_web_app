@@ -103,7 +103,15 @@ export const SolentChart = () => {
       try {
         const response = await axios.get(apiUrl('/gps_map_position'));
         // console.log("Retrieved gps data for the chart"+ response.data);
-
+        const nextTrack = Array.isArray(response.data?.track)
+          ? response.data.track
+              .map(({ longitude, latitude }) => [Number(longitude), Number(latitude)])
+              .filter(([lon, lat]) => Number.isFinite(lon) && Number.isFinite(lat))
+          : []
+        const limitedTrack = nextTrack.length > TRACK_POINT_LIMIT
+          ? nextTrack.slice(nextTrack.length - TRACK_POINT_LIMIT)
+          : nextTrack
+        setTrackCoords(limitedTrack)
         setGpsData(response.data);
       } catch (err){
         console.log("Error fetching the gps data", err);
@@ -161,22 +169,6 @@ export const SolentChart = () => {
         cancelAnimationFrame(animationFrameRef.current)
       }
     }
-  }, [markerCoordinates])
-
-  useEffect(() => {
-    if (!markerCoordinates) return
-
-    setTrackCoords((prev) => {
-      const last = prev[prev.length - 1]
-      if (last && last[0] === markerCoordinates[0] && last[1] === markerCoordinates[1]) {
-        return prev
-      }
-      const next = [...prev, markerCoordinates]
-      if (next.length > TRACK_POINT_LIMIT) {
-        return next.slice(next.length - TRACK_POINT_LIMIT)
-      }
-      return next
-    })
   }, [markerCoordinates])
 
   return (
@@ -518,17 +510,6 @@ export const SolentChart = () => {
                   strokeLinejoin="round"
                 />
               ))}
-              {displayedCoordinates && (
-                <Line
-                  key="track-active"
-                  from={trackCoords[trackCoords.length - 1]}
-                  to={displayedCoordinates}
-                  stroke="rgba(168, 42, 30, 1)"
-                  strokeWidth={2.5}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              )}
             </g>
           )}
           {displayedCoordinates && (
