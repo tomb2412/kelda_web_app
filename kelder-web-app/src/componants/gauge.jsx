@@ -74,7 +74,7 @@ const Guage = function({}){
     };
 
     return (
-        <div className="rounded-xl p-3 bg-[#024887]/10 dark:bg-teal-900">
+        <div className="rounded-xl p-3 bg-[#024887]/10 dark:bg-slate-800/90">
         <HighchartsReact highcharts = {Highcharts} options = {chart_options}/> 
         </div>
     )

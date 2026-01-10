@@ -2,3 +2,36 @@
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+@layer components {
+  .vercel-loading-dots {
+    --loader-dot-size: 0.4rem;
+    --loader-dot-font: 'Arial Rounded MT Bold', 'SF Pro Rounded', system-ui, sans-serif;
+    display: inline-flex;
+    align-items: center;
+    gap: calc(var(--loader-dot-size) * 0.1);
+  }
+
+  .vercel-loading-dots .dot {
+    width: var(--loader-dot-size);
+    height: var(--loader-dot-size);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--loader-dot-color, #1f2937);
+    font-family: var(--loader-dot-font);
+    font-size: calc(var(--loader-dot-size) * 1.4);
+    font-weight: 200;
+    line-height: 1;
+    animation: vercel-loading-dot-bounce 1.2s infinite ease-in-out both;
+  }
+
+  .vercel-loading-dots .dot::after {
+    content: '\2022';
+  }
+}
+
+@keyframes vercel-loading-dot-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 1; }
+  30% { transform: translateY(-0.2rem); opacity: 1; }
+}
