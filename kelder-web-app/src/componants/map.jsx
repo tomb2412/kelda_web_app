@@ -9,7 +9,7 @@ const MAP_COLORS = {
   mapBackground: "rgb(244, 236, 178)",
   landStroke: "rgb(171, 128, 34)",
   solentFill: "rgb(2,72,135)",
-  solentStroke: "rgba(12, 75, 117, 1)",
+  solentStroke: "rgb(141,163,192)",
   graticule: "rgba(0, 0, 0, 1)",
   coastline: "rgb(26, 112, 0)",
   depthContour: "rgba(136, 183, 208, 1)",
