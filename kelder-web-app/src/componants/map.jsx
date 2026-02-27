@@ -8,7 +8,7 @@ const MAP_COLORS = {
   cardBackgroundTint: "rgba(2, 48, 89, 0.1)",
   mapBackground: "rgb(244, 236, 178)",
   landStroke: "rgb(171, 128, 34)",
-  solentFill: "rgb(2,72,135)",
+  solentFill: "rgb(141,163,192)",
   solentStroke: "rgb(141,163,192)",
   graticule: "rgba(0, 0, 0, 1)",
   coastline: "rgb(26, 112, 0)",
