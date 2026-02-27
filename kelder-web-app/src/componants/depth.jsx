@@ -5,7 +5,7 @@ import arrowLeftIcon from '../assets/arrow_left.svg';
 import arrowRightIcon from '../assets/arrow_right.svg';
 
 const BILGE_DEPTH_REFRESH_MS = 2000;
-const LATEST_JOURNEY_URL = 'http://localhost:8000/journeys/latest';
+const LATEST_JOURNEY_URL = apiUrl('/journeys/latest');
 
 const formatHeight = (value) => {
     if (value === null || value === undefined || value === '') {
