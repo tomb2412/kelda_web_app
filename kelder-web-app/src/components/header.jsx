@@ -9,7 +9,7 @@ import sailingIcon from '../assets/sailing.svg';
 import anchorIcon from '../assets/anchor.svg';
 import syncDisabledIcon from '../assets/sync_disabled.svg';
 import { apiUrl } from '../config/api';
-import { useSensorData } from '../context/SensorDataContext';
+import { useSensorData, useSensorErrors } from '../context/SensorDataContext';
 
 const formatStatus = (status) => {
     if (!status) return '';
@@ -22,7 +22,9 @@ const Header = () => {
     const { isSignedIn } = useUser();
     const [isRestarting, setIsRestarting] = useState(false);
     const vesselData = useSensorData('vessel');
+    const sensorErrors = useSensorErrors();
     const isDark = theme === 'dark';
+    const hasConnectivityError = Object.keys(sensorErrors).length > 0 && Object.values(sensorErrors).some(Boolean);
 
     const vesselStatus = vesselData
         ? (typeof vesselData === 'string'
@@ -82,6 +84,15 @@ const Header = () => {
                 </div>
             </div>
             <div className="flex items-center gap-3 text-slate-900 dark:text-white">
+                {hasConnectivityError && (
+                    <div
+                        title="One or more sensors are unreachable"
+                        className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-400/90 text-slate-900 shadow-sm"
+                        aria-label="Connectivity warning: one or more sensors are unreachable"
+                    >
+                        <img src={syncDisabledIcon} alt="" className="h-6 w-6" />
+                    </div>
+                )}
                 <button
                     type="button"
                     onClick={toggleTheme}

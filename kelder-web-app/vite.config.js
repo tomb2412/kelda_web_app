@@ -11,4 +11,17 @@ export default defineConfig({
     }),
     tailwindcss(),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react':      ['react', 'react-dom'],
+          'vendor-highcharts': ['highcharts', 'highcharts-react-official'],
+          'vendor-maps':       ['react-simple-maps'],
+          'vendor-ai':         ['ai', '@ai-sdk/react', '@ai-sdk/openai'],
+          'vendor-clerk':      ['@clerk/clerk-react'],
+        },
+      },
+    },
+  },
 })

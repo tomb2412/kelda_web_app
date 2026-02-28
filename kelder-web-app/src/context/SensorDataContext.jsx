@@ -15,10 +15,12 @@ const initialState = {
     journey: null,
     gpsPosition: null,
     passagePlan: null,
+    errors: {},
 };
 
 function reducer(state, { type, payload }) {
     if (type === 'UPDATE') return { ...state, ...payload };
+    if (type === 'UPDATE_ERRORS') return { ...state, errors: { ...state.errors, ...payload } };
     return state;
 }
 
@@ -43,20 +45,27 @@ export function SensorDataProvider({ children }) {
                 FAST_ENDPOINTS.map(([, path, config]) => axios.get(apiUrl(path), config))
             );
             const payload = {};
+            const errors = {};
             results.forEach((result, i) => {
+                const key = FAST_ENDPOINTS[i][0];
                 if (result.status === 'fulfilled') {
-                    payload[FAST_ENDPOINTS[i][0]] = result.value.data;
+                    payload[key] = result.value.data;
+                    errors[key] = false;
+                } else {
+                    errors[key] = true;
                 }
             });
             dispatch({ type: 'UPDATE', payload });
+            dispatch({ type: 'UPDATE_ERRORS', payload: errors });
         }
 
         async function fetchSlow() {
             try {
                 const res = await axios.get(apiUrl('/passage_plan'));
                 dispatch({ type: 'UPDATE', payload: { passagePlan: res.data } });
+                dispatch({ type: 'UPDATE_ERRORS', payload: { passagePlan: false } });
             } catch {
-                // swallow — stale data stays in state
+                dispatch({ type: 'UPDATE_ERRORS', payload: { passagePlan: true } });
             }
         }
 
@@ -83,4 +92,10 @@ export function useSensorData(key) {
     const ctx = useContext(SensorDataContext);
     if (!ctx) throw new Error('useSensorData must be used within SensorDataProvider');
     return ctx[key];
+}
+
+export function useSensorErrors() {
+    const ctx = useContext(SensorDataContext);
+    if (!ctx) throw new Error('useSensorErrors must be used within SensorDataProvider');
+    return ctx.errors;
 }

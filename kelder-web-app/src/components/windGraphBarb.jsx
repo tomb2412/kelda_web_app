@@ -1,5 +1,5 @@
 //"use client";
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useRef, useMemo} from 'react';
 import Highcharts from "highcharts"
 import HighchartsReact from "highcharts-react-official"
 import HighchartsExporting from 'highcharts/modules/exporting'
@@ -83,7 +83,7 @@ const WindBarb = () => {
     }, []);
 
     // Define the chart options (dynamic series)
-    const chartOptions = {
+    const chartOptions = useMemo(() => ({
         title: {
             text: 'Weather Data (Temperature & Pressure)',
             style: {color: theme==='light' ? "#000000" : "#ffffff" },
@@ -140,7 +140,7 @@ const WindBarb = () => {
 
             }
         ], // Dynamically updated series
-    };
+    }), [theme, series]);
 
     return (
         <div className="rounded-xl p-3 bg-[#024887]/10 dark:bg-slate-800/90">

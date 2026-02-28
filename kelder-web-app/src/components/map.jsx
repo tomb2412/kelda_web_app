@@ -3,6 +3,19 @@ import { ComposableMap, Geographies, Geography, Graticule, Line, Marker, Zoomabl
 import solentDataUrl from "../assets/marks,water,land.geojson?url"
 import { useSensorData } from "../context/SensorDataContext"
 
+const fixWindingOrder = (geo) => {
+    const { type, coordinates } = geo.geometry;
+    let fixed;
+    if (type === 'Polygon') {
+        fixed = coordinates.map((ring) => ring.slice().reverse());
+    } else if (type === 'MultiPolygon') {
+        fixed = coordinates.map((poly) => poly.map((ring) => ring.slice().reverse()));
+    } else {
+        return geo;
+    }
+    return { ...geo, geometry: { ...geo.geometry, coordinates: fixed } };
+};
+
 const MAP_COLORS = {
   cardBackgroundTint: "rgba(2, 48, 89, 0.1)",
   mapBackground: "rgb(244, 236, 178)",
@@ -216,20 +229,14 @@ export const SolentChart = () => {
                   )
               })
               .map((geo) => {
-                  // --- flip winding if it looks inverted ---
-                  if (
-                  geo.geometry.type === "Polygon" &&
-                  geo.geometry.coordinates?.length
-                  ) {
-                  geo.geometry.coordinates = geo.geometry.coordinates.map((ring) =>
-                      ring.slice().reverse()
-                  )
-                  }
+                  const fixedGeo = geo.geometry.type === 'Polygon' && geo.geometry.coordinates?.length
+                      ? fixWindingOrder(geo)
+                      : geo;
 
                   return (
                   <Geography
                       key={geo.rsmKey}
-                      geography={geo}
+                      geography={fixedGeo}
                       fill={MAP_COLORS.solentFill}
                       stroke={MAP_COLORS.solentStroke}
                       strokeWidth={0.4}
@@ -252,28 +259,17 @@ export const SolentChart = () => {
                   !(geo.geometry.type === "Polygon" && geo.geometry.coordinates.length > 1)
               )
               .map((geo) => {
-                  // --- Fix reversed winding so fill stays inside ---
-                  if (
-                  geo.geometry.type === "Polygon" &&
-                  Array.isArray(geo.geometry.coordinates)
-                  ) {
-                  geo.geometry.coordinates = geo.geometry.coordinates.map((ring) =>
-                      ring.slice().reverse()
-                  )
-                  }
-                  if (
-                  geo.geometry.type === "MultiPolygon" &&
-                  Array.isArray(geo.geometry.coordinates)
-                  ) {
-                  geo.geometry.coordinates = geo.geometry.coordinates.map((poly) =>
-                      poly.map((ring) => ring.slice().reverse())
-                  )
-                  }
+                  const fixedGeo = (
+                      geo.geometry.type === 'Polygon' ||
+                      geo.geometry.type === 'MultiPolygon'
+                  ) && Array.isArray(geo.geometry.coordinates)
+                      ? fixWindingOrder(geo)
+                      : geo;
 
                   return (
                   <Geography
                       key={geo.rsmKey}
-                      geography={geo}
+                      geography={fixedGeo}
                       fill={MAP_COLORS.solentFill}   // blue sea
                       stroke={MAP_COLORS.solentStroke}
                       strokeWidth={0.4}
