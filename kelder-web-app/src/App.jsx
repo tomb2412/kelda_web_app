@@ -1,56 +1,34 @@
-'use client'
-import {useState} from 'react';
-import Input from "./componants/input";
-import Board from "./componants/board";
-import DepthGuage from "./componants/depth";
-import WindBarb from "./componants/windGraphBarb";
-import Guage from "./componants/gauge";
-import WindRose from "./componants/wind_rose";
-import PassagePlan from './componants/passagePlan';
-import GpsDisplay from "./componants/gps";
-import Log from './componants/log';
-import FloatingChat from "./componants/chatBot";
+import { lazy, Suspense } from 'react';
+import DepthGuage from "./components/depth";
+import WindBarb from "./components/windGraphBarb";
+import WindRose from "./components/wind_rose";
+import PassagePlan from './components/passagePlan';
+import GpsDisplay from "./components/gps";
 import { SignedIn } from '@clerk/clerk-react';
-import Chart from './componants/map';
+import Chart from './components/map';
+import { ErrorBoundary } from './components/ErrorBoundary';
+
+const FloatingChat = lazy(() => import('./components/chatBot'));
 
 function App() {
-  const [taskList, setTaskList] = useState([]);
-
-  console.log(taskList);
   return (
     <div className='dark:bg-slate-500 bg-white]'>
-        <div className='px-3 md:px-5 py-8 gap-4 '>
-        {/* <div className='flex flex-col items-center justify-center py-8 gap-4'>
-          <h1 className='text-xl font-semibold'>02- To Do Board</h1>
-          <Input taskList={taskList} setTaskList={setTaskList} />
-        </div>   */}
+      <div className='px-3 md:px-5 py-8 gap-4'>
         <div className='flex flex-col sm:grid md:grid-cols-2 lg:grid-cols-3 gap-3'>
-          <GpsDisplay />
-          <WindRose />
-          <DepthGuage />
-          {/* <Log />  */}
-          {/* <Guage /> */}
-          <WindBarb />
-          <PassagePlan /> 
-          <Chart/>
+          <ErrorBoundary><GpsDisplay /></ErrorBoundary>
+          <ErrorBoundary><WindRose /></ErrorBoundary>
+          <ErrorBoundary><DepthGuage /></ErrorBoundary>
+          <ErrorBoundary><WindBarb /></ErrorBoundary>
+          <ErrorBoundary><PassagePlan /></ErrorBoundary>
+          <ErrorBoundary><Chart /></ErrorBoundary>
           <SignedIn>
-            <FloatingChat/>
+            <Suspense fallback={null}>
+              <ErrorBoundary>
+                <FloatingChat/>
+              </ErrorBoundary>
+            </Suspense>
           </SignedIn>
-          
         </div>
-  
-        <div className='flex flex-col gap-4 sm:grid grid-cols-3 py-3 px-3 sm:px-8 md:px-10 lg:px-12'>
-          {taskList.map((task, index) =>
-            <Board 
-              key={index}
-              index={index}
-              task={task}
-              taskList={taskList}
-              setTaskList={setTaskList}
-            /> 
-          )}
-        </div>
-        
       </div>
     </div>
   );

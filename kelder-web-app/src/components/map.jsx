@@ -1,13 +1,27 @@
-import { useState } from "react"
-import { ComposableMap, Geographies, Geography, Graticule, Marker, ZoomableGroup } from "react-simple-maps"
+import { useState, useEffect, useRef } from "react"
+import { ComposableMap, Geographies, Geography, Graticule, Line, Marker, ZoomableGroup } from "react-simple-maps"
 import solentDataUrl from "../assets/marks,water,land.geojson?url"
+import { useSensorData } from "../context/SensorDataContext"
+
+const fixWindingOrder = (geo) => {
+    const { type, coordinates } = geo.geometry;
+    let fixed;
+    if (type === 'Polygon') {
+        fixed = coordinates.map((ring) => ring.slice().reverse());
+    } else if (type === 'MultiPolygon') {
+        fixed = coordinates.map((poly) => poly.map((ring) => ring.slice().reverse()));
+    } else {
+        return geo;
+    }
+    return { ...geo, geometry: { ...geo.geometry, coordinates: fixed } };
+};
 
 const MAP_COLORS = {
   cardBackgroundTint: "rgba(2, 48, 89, 0.1)",
   mapBackground: "rgb(244, 236, 178)",
   landStroke: "rgb(171, 128, 34)",
-  solentFill: "rgb(84, 167, 255)",
-  solentStroke: "rgba(12, 75, 117, 1)",
+  solentFill: "rgb(141,163,192)",
+  solentStroke: "rgb(141,163,192)",
   graticule: "rgba(0, 0, 0, 1)",
   coastline: "rgb(26, 112, 0)",
   depthContour: "rgba(136, 183, 208, 1)",
@@ -31,12 +45,37 @@ const MAP_CENTER = [-1.30, 50.8]
 const MIN_ZOOM = 0.8
 const MAX_ZOOM = 8
 const ZOOM_STEP = 0.4
+const MARKER_ANIMATION_MS = 800
+const MARKER_ANIMATION_MAX_MS = 1500
+const MARKER_ANIMATION_MIN_MS = 250
+const TRACK_POINT_LIMIT = 500
+const MARKER_BASE_SCALE = 1
+const MARKER_SCALE_FACTOR = 0.12
+
+const normalizeBearing = (value) => {
+  const num = Number(value)
+  if (!Number.isFinite(num)) return null
+  return ((num % 360) + 360) % 360
+}
+
+const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3)
+
+const computeAnimationDuration = (start, target) => {
+  if (!start || !target) return MARKER_ANIMATION_MS
+  const dx = target[0] - start[0]
+  const dy = target[1] - start[1]
+  const distance = Math.sqrt(dx * dx + dy * dy)
+  const msPerDegree = 40000 // tuned for Solent-scale moves (deg -> ms)
+  const dynamicMs = distance * msPerDegree
+  return Math.min(MARKER_ANIMATION_MAX_MS, Math.max(MARKER_ANIMATION_MIN_MS, dynamicMs))
+}
 
 export const SolentChart = () => {
   const [viewport, setViewport] = useState({
     center: MAP_CENTER,
     zoom: 1,
   })
+  const animationFrameRef = useRef(null)
 
   const clampZoom = (value) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value))
 
@@ -56,6 +95,73 @@ export const SolentChart = () => {
   const handleWheelCapture = (event) => {
     event.preventDefault()
   }
+
+  const gpsData = useSensorData('gpsPosition')
+  const [animatedCoords, setAnimatedCoords] = useState(null)
+  const currentCoordsRef = useRef(null)
+
+  const rawTrack = Array.isArray(gpsData?.track) ? gpsData.track : []
+  const trackCoords = rawTrack
+    .map(({ longitude, latitude }) => [Number(longitude), Number(latitude)])
+    .filter(([lon, lat]) => Number.isFinite(lon) && Number.isFinite(lat))
+    .slice(-TRACK_POINT_LIMIT)
+
+  const hasGpsCoordinates =
+    Number.isFinite(Number(gpsData?.longitude)) && Number.isFinite(Number(gpsData?.latitude))
+  const markerCoordinates = hasGpsCoordinates
+    ? [Number(gpsData.longitude), Number(gpsData.latitude)]
+    : null
+  const markerRotation = normalizeBearing(gpsData?.cog) ?? 0
+  const displayedCoordinates = animatedCoords ?? markerCoordinates
+  const markerScale = MARKER_BASE_SCALE + (MAX_ZOOM - viewport.zoom) * MARKER_SCALE_FACTOR
+
+  useEffect(() => {
+    if (!markerCoordinates) return
+
+    const startCoords = currentCoordsRef.current ?? animatedCoords ?? markerCoordinates
+    const targetCoords = markerCoordinates
+
+    if (!currentCoordsRef.current) {
+      currentCoordsRef.current = targetCoords
+      setAnimatedCoords(targetCoords)
+      return
+    }
+
+    if (startCoords[0] === targetCoords[0] && startCoords[1] === targetCoords[1]) {
+      return
+    }
+
+    const duration = computeAnimationDuration(startCoords, targetCoords)
+    const startTime = performance.now()
+    const animate = (time) => {
+      const rawProgress = Math.min((time - startTime) / duration, 1)
+      const progress = easeOutCubic(rawProgress)
+      const lon = startCoords[0] + (targetCoords[0] - startCoords[0]) * progress
+      const lat = startCoords[1] + (targetCoords[1] - startCoords[1]) * progress
+      const nextCoords = [lon, lat]
+      currentCoordsRef.current = nextCoords
+      setAnimatedCoords(nextCoords)
+
+      if (rawProgress < 1) {
+        animationFrameRef.current = requestAnimationFrame(animate)
+      } else {
+        currentCoordsRef.current = targetCoords
+        animationFrameRef.current = null
+      }
+    }
+
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+    }
+    animationFrameRef.current = requestAnimationFrame(animate)
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+    }
+  }, [markerCoordinates])
+
   return (
     <div
       className="rounded-xl p-3 text-slate-800 dark:bg-slate-800/90 bg-[#024887]/10  dark:text-white mb-3"
@@ -123,20 +229,14 @@ export const SolentChart = () => {
                   )
               })
               .map((geo) => {
-                  // --- flip winding if it looks inverted ---
-                  if (
-                  geo.geometry.type === "Polygon" &&
-                  geo.geometry.coordinates?.length
-                  ) {
-                  geo.geometry.coordinates = geo.geometry.coordinates.map((ring) =>
-                      ring.slice().reverse()
-                  )
-                  }
+                  const fixedGeo = geo.geometry.type === 'Polygon' && geo.geometry.coordinates?.length
+                      ? fixWindingOrder(geo)
+                      : geo;
 
                   return (
                   <Geography
                       key={geo.rsmKey}
-                      geography={geo}
+                      geography={fixedGeo}
                       fill={MAP_COLORS.solentFill}
                       stroke={MAP_COLORS.solentStroke}
                       strokeWidth={0.4}
@@ -159,28 +259,17 @@ export const SolentChart = () => {
                   !(geo.geometry.type === "Polygon" && geo.geometry.coordinates.length > 1)
               )
               .map((geo) => {
-                  // --- Fix reversed winding so fill stays inside ---
-                  if (
-                  geo.geometry.type === "Polygon" &&
-                  Array.isArray(geo.geometry.coordinates)
-                  ) {
-                  geo.geometry.coordinates = geo.geometry.coordinates.map((ring) =>
-                      ring.slice().reverse()
-                  )
-                  }
-                  if (
-                  geo.geometry.type === "MultiPolygon" &&
-                  Array.isArray(geo.geometry.coordinates)
-                  ) {
-                  geo.geometry.coordinates = geo.geometry.coordinates.map((poly) =>
-                      poly.map((ring) => ring.slice().reverse())
-                  )
-                  }
+                  const fixedGeo = (
+                      geo.geometry.type === 'Polygon' ||
+                      geo.geometry.type === 'MultiPolygon'
+                  ) && Array.isArray(geo.geometry.coordinates)
+                      ? fixWindingOrder(geo)
+                      : geo;
 
                   return (
                   <Geography
                       key={geo.rsmKey}
-                      geography={geo}
+                      geography={fixedGeo}
                       fill={MAP_COLORS.solentFill}   // blue sea
                       stroke={MAP_COLORS.solentStroke}
                       strokeWidth={0.4}
@@ -382,6 +471,32 @@ export const SolentChart = () => {
               })
               }
           </Geographies>
+          {trackCoords.length > 1 && (
+            <g>
+              {trackCoords.slice(1).map((coord, idx) => (
+                <Line
+                  key={`track-${idx}`}
+                  from={trackCoords[idx]}
+                  to={coord}
+                  stroke="rgba(168, 42, 30, 1)"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              ))}
+            </g>
+          )}
+          {displayedCoordinates && (
+            <Marker coordinates={displayedCoordinates}>
+              <polygon
+                points="0,-6 7,6, 0,0 -7,6 "
+                transform={`rotate(${markerRotation}) scale(${markerScale})`}
+                fill='rgba(168, 42, 30, 1)'
+                stroke='rgba(0, 0, 0, 1)'
+                strokeWidth={1}
+                />
+            </Marker>
+          )}
           </ZoomableGroup>
         </ComposableMap>
         <div className="absolute right-4 top-4 z-10 flex flex-col overflow-hidden rounded-lg shadow">
@@ -412,82 +527,82 @@ export const SolentChart = () => {
 export default SolentChart
 
 
-{/* --- LAND (everything except the Solent polygon) --- */}
-<Geographies geography={solentDataUrl}>
-  {({ geographies }) =>
-    geographies
-      .filter((geo) => {
-        const p = geo.properties
-        // Anything not marked as the Solent itself is "land"
-        return !(
-          p.name === "The Solent" ||
-          p["int_name"] === "Solent" ||
-          p["natural"] === "strait" ||
-          p["wikidata"] === "Q1143832" ||
-          p["wikipedia"]?.includes("The_Solent")
-        )
-      })
-      .map((geo) => (
-        <Geography
-          key={geo.rsmKey}
-          geography={geo}
-          fill={MAP_COLORS.mapBackground} // sand
-          stroke={MAP_COLORS.landStroke}
-          strokeWidth={0.4}
-        />
-      ))
-  }
-</Geographies>
+// {/* --- LAND (everything except the Solent polygon) --- */}
+// <Geographies geography={solentDataUrl}>
+//   {({ geographies }) =>
+//     geographies
+//       .filter((geo) => {
+//         const p = geo.properties
+//         // Anything not marked as the Solent itself is "land"
+//         return !(
+//           p.name === "The Solent" ||
+//           p["int_name"] === "Solent" ||
+//           p["natural"] === "strait" ||
+//           p["wikidata"] === "Q1143832" ||
+//           p["wikipedia"]?.includes("The_Solent")
+//         )
+//       })
+//       .map((geo) => (
+//         <Geography
+//           key={geo.rsmKey}
+//           geography={geo}
+//           fill={MAP_COLORS.mapBackground} // sand
+//           stroke={MAP_COLORS.landStroke}
+//           strokeWidth={0.4}
+//         />
+//       ))
+//   }
+// </Geographies>
 
-{/* --- THE SOLENT WATER AREA ONLY --- */}
-<Geographies geography={solentDataUrl}>
-  {({ geographies }) =>
-    geographies
-      .filter((geo) => {
-        const p = geo.properties
-        return (
-          p.name === "The Solent" ||
-          p["int_name"] === "Solent" ||
-          p["natural"] === "strait" ||
-          p["wikidata"] === "Q1143832" ||
-          p["wikipedia"]?.includes("The_Solent")
-        )
-      })
-      .map((geo) => (
-        <Geography
-          key={geo.rsmKey}
-          geography={geo}
-          fill={MAP_COLORS.solentFill} // sea blue
-          stroke={MAP_COLORS.solentStroke}
-          strokeWidth={0.4}
-        />
-      ))
-  }
-</Geographies>
+// {/* --- THE SOLENT WATER AREA ONLY --- */}
+// <Geographies geography={solentDataUrl}>
+//   {({ geographies }) =>
+//     geographies
+//       .filter((geo) => {
+//         const p = geo.properties
+//         return (
+//           p.name === "The Solent" ||
+//           p["int_name"] === "Solent" ||
+//           p["natural"] === "strait" ||
+//           p["wikidata"] === "Q1143832" ||
+//           p["wikipedia"]?.includes("The_Solent")
+//         )
+//       })
+//       .map((geo) => (
+//         <Geography
+//           key={geo.rsmKey}
+//           geography={geo}
+//           fill={MAP_COLORS.solentFill} // sea blue
+//           stroke={MAP_COLORS.solentStroke}
+//           strokeWidth={0.4}
+//         />
+//       ))
+//   }
+// </Geographies>
 
-{/* --- COASTLINES + DEPTH CONTOURS --- */}
-<Geographies geography={solentDataUrl}>
-  {({ geographies }) =>
-    geographies
-      .filter(
-        (geo) =>
-          geo.properties.natural === "coastline" ||
-          geo.properties["seamark:type"] === "depth_contour"
-      )
-      .map((geo) => {
-        const seamarkType = geo.properties["seamark:type"]
-        const stroke =
-          seamarkType === "depth_contour" ? MAP_COLORS.depthContour : MAP_COLORS.coastline
-        const strokeWidth = seamarkType === "depth_contour" ? 0.6 : 0.8
-        return (
-          <Geography
-            key={geo.rsmKey}
-            geography={geo}
-            fill="none"
-            stroke={stroke}
-            strokeWidth={strokeWidth}
-          />
-        )
-      })
-  }
-</Geographies>
+// {/* --- COASTLINES + DEPTH CONTOURS --- */}
+// <Geographies geography={solentDataUrl}>
+//   {({ geographies }) =>
+//     geographies
+//       .filter(
+//         (geo) =>
+//           geo.properties.natural === "coastline" ||
+//           geo.properties["seamark:type"] === "depth_contour"
+//       )
+//       .map((geo) => {
+//         const seamarkType = geo.properties["seamark:type"]
+//         const stroke =
+//           seamarkType === "depth_contour" ? MAP_COLORS.depthContour : MAP_COLORS.coastline
+//         const strokeWidth = seamarkType === "depth_contour" ? 0.6 : 0.8
+//         return (
+//           <Geography
+//             key={geo.rsmKey}
+//             geography={geo}
+//             fill="none"
+//             stroke={stroke}
+//             strokeWidth={strokeWidth}
+//           />
+//         )
+//       })
+//   }
+// </Geographies>

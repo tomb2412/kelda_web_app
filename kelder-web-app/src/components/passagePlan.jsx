@@ -1,29 +1,6 @@
-import { useState, useEffect } from 'react';
 import { useThemeContext } from './ThemeContext';
-import axios from 'axios';
-import { apiUrl } from '../config/api';
-
-const formatDdMmSs = (value) => {
-    if (value === null || value === undefined) {
-        return '--';
-    }
-
-    const stringValue = String(value).trim();
-    const direction = (stringValue.match(/[NSEW]/i) || [])[0] || '';
-    const sign = stringValue.startsWith('-') ? '-' : '';
-    const raw = stringValue.replace(/[^0-9]/g, '');
-
-    if (!raw) {
-        return '--';
-    }
-
-    const seconds = raw.slice(-2) || '00';
-    const minutes = raw.slice(-4, -2) || '00';
-    const degrees = raw.slice(0, -4) || '0';
-    const suffix = direction ? ` ${direction.toUpperCase()}` : '';
-
-    return `${sign}${degrees}°${minutes}'${seconds}"${suffix}`;
-};
+import { useSensorData } from '../context/SensorDataContext';
+import { formatDdMmSs } from '../utils/formatters';
 
 const fallbackWaypoint = {
     name: '--',
@@ -42,27 +19,9 @@ const fallbackPlan = {
 const PassagePlan = function(){
     const {theme} = useThemeContext();
 
-    const [passagePlan, setPassagePlan] = useState(null);
-    const [error, setError] = useState(null);
-
-    useEffect(() => {
-        const requestPassagePlan = async () => {
-            try {
-                const response = await axios.get(apiUrl('/passage_plan'));
-                setPassagePlan(response.data.passage_plan);
-                setError(null);
-            } catch (fetchError) {
-                console.error("Error receiving the passage plan", fetchError);
-                setError('Unable to load the passage plan right now.');
-            }
-        }
-
-        requestPassagePlan();
-        const interval = setInterval(requestPassagePlan, 10000);
-        return () => clearInterval(interval);
-    }, []);
-
-    const isLoading = !passagePlan && !error;
+    const passagePlanData = useSensorData('passagePlan');
+    const passagePlan = passagePlanData?.passage_plan ?? null;
+    const isLoading = !passagePlan;
     const planToRender = passagePlan ?? fallbackPlan;
     const waypointsSource = Array.isArray(planToRender.course_to_steer) ? planToRender.course_to_steer : [];
     const waypoints = waypointsSource.length ? waypointsSource : fallbackPlan.course_to_steer;

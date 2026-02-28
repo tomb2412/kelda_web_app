@@ -4,10 +4,8 @@ import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 import HighchartsMore from "highcharts/highcharts-more";
 import { useThemeContext } from "./ThemeContext";
-import axios from 'axios';
-import { apiUrl } from '../config/api';
+import { useSensorData } from '../context/SensorDataContext';
 
-const COMPASS_REFRESH_MS = 2000;
 const INITIAL_HEADING = 0;
 const ROTATION_ANIMATION_MS = 800;
 const DEFAULT_COMPASS_READING = {
@@ -72,6 +70,7 @@ const shortestAngleDelta = (from, to) => {
 const WindRose = function({}){
     const {theme} = useThemeContext();
 
+    const compassData = useSensorData('compass');
     const [compassHeading, setCompassHeading] = useState(DEFAULT_COMPASS_READING);
     const [displayHeading, setDisplayHeading] = useState(INITIAL_HEADING);
     const [displayCog, setDisplayCog] = useState(INITIAL_HEADING);
@@ -80,32 +79,16 @@ const WindRose = function({}){
     const chartRef = useRef(null);
     const headingAnimationRef = useRef(null);
     const cogAnimationRef = useRef(null);
-    const [error, setError] = useState(null);
 
-    useEffect(()=> {
-        const requestCompassData = async () => {
-            try {
-                const response = await axios.get(apiUrl('/compass_heading'));//"http://raspberrypi.local:8000/compass_heading");
-                console.log(response.data);
-                const nextHeading = Number(response.data?.heading);
-                const nextCog = Number(response.data?.course_over_ground);
-                setCompassHeading((prev) => ({
-                    heading: Number.isFinite(nextHeading) ? nextHeading : prev.heading,
-                    course_over_ground: Number.isFinite(nextCog) ? nextCog : prev.course_over_ground,
-                }));
-                setError(null);
-            } catch (err) {
-                console.log("Error fetching compass data: ", err);
-                setError(null);//"Error fetching GPS data");
-            }
-        };
-
-        requestCompassData(); // On startup
-
-        const interval = setInterval(requestCompassData, COMPASS_REFRESH_MS);
-
-        return () => clearInterval(interval);
-    }, []);
+    useEffect(() => {
+        if (!compassData) return;
+        const nextHeading = Number(compassData?.heading);
+        const nextCog = Number(compassData?.course_over_ground);
+        setCompassHeading((prev) => ({
+            heading: Number.isFinite(nextHeading) ? nextHeading : prev.heading,
+            course_over_ground: Number.isFinite(nextCog) ? nextCog : prev.course_over_ground,
+        }));
+    }, [compassData]);
     
     useEffect(() => {
         const chart = chartRef.current?.chart;

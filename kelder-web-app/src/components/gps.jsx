@@ -1,28 +1,5 @@
-import React, {useState, useEffect} from 'react';
-import axios from 'axios';
-import { apiUrl } from '../config/api';
-
-const formatDdMmSs = (value) => {
-    if (value === null || value === undefined) {
-        return '--';
-    }
-
-    const stringValue = String(value).trim();
-    const direction = (stringValue.match(/[NSEW]/i) || [])[0] || '';
-    const sign = stringValue.startsWith('-') ? '-' : '';
-    const raw = stringValue.replace(/[^0-9]/g, '');
-
-    if (!raw) {
-        return '--';
-    }
-
-    const seconds = raw.slice(-2) || '00';
-    const minutes = raw.slice(-4, -2) || '00';
-    const degrees = raw.slice(0, -4) || '0';
-    const suffix = direction ? ` ${direction.toUpperCase()}` : '';
-
-    return `${sign}${degrees}°${minutes}'${seconds}"${suffix}`;
-};
+import { useSensorData } from '../context/SensorDataContext';
+import { formatDdMmSs } from '../utils/formatters';
 
 const formatSpeeds = (value) => {
     const numericValue = Number(value);
@@ -67,41 +44,10 @@ const fallbackGpsData = {
     dtw: '--',
 };
 
-const DEFAULT_REFRESH_MS = 2000;
-const gpsRefreshMs = (() => {
-    const parsed = Number(import.meta.env.API_REFRESH_RATE);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_REFRESH_MS;
-})();
 
-const GpsDisplay = function({}){
-    const [gpsData, setGpsData] = useState(null);
-    const [error, setError] = useState(null);
-    
-    useEffect(()=> {
-        const requestGpsData = async () => {
-            try {
-                const response = await axios.get(apiUrl('/gps_card_data'));//"http://raspberrypi.local:8000/gps_card_data");//back_up_data_model;// 
-                console.log("Returned GPS data raw: "+ response.data);
-                setGpsData(response.data);
-                setError(null);
-            } catch (err) {
-                console.log("Error fetching GPS data: ", err);
-                setError("Error fetching GPS data");
-                //setGpsData(back_up_data_model) // TODO: Remove when live
-            }
-        };
-
-        requestGpsData(); // On startup
-
-        const interval = setInterval(requestGpsData, gpsRefreshMs);
-
-        return () => clearInterval(interval);
-    }, []);
-
-    console.log(gpsData)
-
+const GpsDisplay = function(){
+    const gpsData = useSensorData('gps');
     const dataToRender = gpsData ?? fallbackGpsData;
-    const hasData = Boolean(gpsData);
 
     return (
         <div className="p-3 rounded-xl bg-[#024887]/10 dark:bg-slate-800/90">
@@ -151,11 +97,6 @@ const GpsDisplay = function({}){
                     </div>
                 </div>
             </div>
-            {error && (
-                <p className="text-sm text-center mt-2 text-red-500 dark:text-red-300">
-                    {error}
-                </p>
-            )}
         </div>
     )
 }
