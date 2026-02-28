@@ -73,10 +73,9 @@ export default function FloatingChat() {
             api: apiUrl('/chat_stream'),
         }), 
         onError: (error) => {
-        console.error('Chat error:', error);
+        if (import.meta.env.DEV) console.error('Chat error:', error);
         },
-        onFinish: (message) => {
-        console.log('Message finished:', message);
+        onFinish: () => {
         setProgressUpdate('');
         },
         onData: (dataPart) => {
@@ -123,7 +122,7 @@ export default function FloatingChat() {
         });
         setMessages([]);
     } catch (err) {
-        console.error('Failed to clear chat history', err);
+        if (import.meta.env.DEV) console.error('Failed to clear chat history', err);
     } finally {
         setIsClearing(false);
     }

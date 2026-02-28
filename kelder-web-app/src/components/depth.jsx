@@ -1,10 +1,10 @@
 import React, {useState, useEffect, useRef} from 'react';
 import axios from 'axios';
 import { apiUrl } from '../config/api';
+import { POLL_INTERVAL_MS } from '../config/constants';
 import arrowLeftIcon from '../assets/arrow_left.svg';
 import arrowRightIcon from '../assets/arrow_right.svg';
 
-const BILGE_DEPTH_REFRESH_MS = 2000;
 const LATEST_JOURNEY_URL = apiUrl('/journeys/latest');
 
 const formatHeight = (value) => {
@@ -213,26 +213,23 @@ const DepthGuage = function(){
                 setjourneyCounter(journeyCounter - 1);
             }
         }
-        console.log('The counter: ', journeyCounter, '. The limit: ', journeyLimit)
     };
 
     useEffect(()=> {
         const requestTidalEvent = async () => {
             try {
                 const response = await axios.get(apiUrl('/get_next_tidal_event'))
-                console.log(response.data);
                 setTidalEvent(response.data);
 
                 setError(null);
             } catch (err) {
-                console.log("Error fetching next tidal event: ", err);
                 setError(null);
             }
         };
 
-        requestTidalEvent(); // On startup
+        requestTidalEvent();
 
-        const interval = setInterval(requestTidalEvent, 2000);
+        const interval = setInterval(requestTidalEvent, POLL_INTERVAL_MS);
 
         return () => clearInterval(interval);
     }, []);
@@ -243,13 +240,13 @@ const DepthGuage = function(){
                 const response = await axios.get(apiUrl('/get_height_of_tide'));
                 setLiveHeight(normalizeHeightResponse(response.data));
             } catch (err) {
-                console.log("Error fetching current height of tide: ", err);
+                // swallow — stale data stays in state
             }
         };
 
         requestHeightOfTide();
 
-        const interval = setInterval(requestHeightOfTide, 2000);
+        const interval = setInterval(requestHeightOfTide, POLL_INTERVAL_MS);
 
         return () => clearInterval(interval);
     }, []);
@@ -260,14 +257,13 @@ const DepthGuage = function(){
                 const response = await axios.get(apiUrl('/bilge_depth'));
                 setBilgeDepth(normalizeHeightResponse(response.data));
             } catch (err) {
-                console.log("Error fetching bilge depth: ", err);
                 setBilgeDepth(null);
             }
         };
 
         requestBilgeDepth();
 
-        const interval = setInterval(requestBilgeDepth, BILGE_DEPTH_REFRESH_MS);
+        const interval = setInterval(requestBilgeDepth, POLL_INTERVAL_MS);
 
         return () => clearInterval(interval);
     }, []);
@@ -293,7 +289,7 @@ const DepthGuage = function(){
         };
 
         requestLatestJourney();
-        const interval = setInterval(requestLatestJourney, 2000);
+        const interval = setInterval(requestLatestJourney, POLL_INTERVAL_MS);
 
         return () => clearInterval(interval);
     }, []);

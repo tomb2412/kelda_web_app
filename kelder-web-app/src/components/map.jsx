@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import { ComposableMap, Geographies, Geography, Graticule, Line, Marker, ZoomableGroup } from "react-simple-maps"
 import solentDataUrl from "../assets/marks,water,land.geojson?url"
 import { apiUrl } from "../config/api"
+import { POLL_INTERVAL_MS } from "../config/constants"
 import axios from 'axios';
 
 const MAP_COLORS = {
@@ -33,7 +34,6 @@ const MAP_CENTER = [-1.30, 50.8]
 const MIN_ZOOM = 0.8
 const MAX_ZOOM = 8
 const ZOOM_STEP = 0.4
-const DEFAULT_REFRESH_MS = 2000
 const MARKER_ANIMATION_MS = 800
 const MARKER_ANIMATION_MAX_MS = 1500
 const MARKER_ANIMATION_MIN_MS = 250
@@ -114,12 +114,12 @@ export const SolentChart = () => {
         setTrackCoords(limitedTrack)
         setGpsData(response.data);
       } catch (err){
-        console.log("Error fetching the gps data", err);
+        // swallow — stale data stays in state
       }
     };
 
     requestGPSData();
-    const interval = setInterval(requestGPSData, DEFAULT_REFRESH_MS)
+    const interval = setInterval(requestGPSData, POLL_INTERVAL_MS)
 
     return () => clearInterval(interval)
   }, [])

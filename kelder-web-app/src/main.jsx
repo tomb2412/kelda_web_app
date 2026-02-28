@@ -1,9 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import { ThemeProvider } from './componants/ThemeContext.jsx'
+import { ThemeProvider } from './components/ThemeContext.jsx'
 import App from './App.jsx'
-import Header from './componants/header'
+import Header from './components/header'
 import { ClerkProvider } from '@clerk/clerk-react'
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY

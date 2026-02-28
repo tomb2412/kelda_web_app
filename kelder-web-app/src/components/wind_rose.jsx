@@ -6,8 +6,8 @@ import HighchartsMore from "highcharts/highcharts-more";
 import { useThemeContext } from "./ThemeContext";
 import axios from 'axios';
 import { apiUrl } from '../config/api';
+import { POLL_INTERVAL_MS } from '../config/constants';
 
-const COMPASS_REFRESH_MS = 2000;
 const INITIAL_HEADING = 0;
 const ROTATION_ANIMATION_MS = 800;
 const DEFAULT_COMPASS_READING = {
@@ -85,8 +85,7 @@ const WindRose = function({}){
     useEffect(()=> {
         const requestCompassData = async () => {
             try {
-                const response = await axios.get(apiUrl('/compass_heading'));//"http://raspberrypi.local:8000/compass_heading");
-                console.log(response.data);
+                const response = await axios.get(apiUrl('/compass_heading'));
                 const nextHeading = Number(response.data?.heading);
                 const nextCog = Number(response.data?.course_over_ground);
                 setCompassHeading((prev) => ({
@@ -95,14 +94,13 @@ const WindRose = function({}){
                 }));
                 setError(null);
             } catch (err) {
-                console.log("Error fetching compass data: ", err);
-                setError(null);//"Error fetching GPS data");
+                setError(null);
             }
         };
 
         requestCompassData(); // On startup
 
-        const interval = setInterval(requestCompassData, COMPASS_REFRESH_MS);
+        const interval = setInterval(requestCompassData, POLL_INTERVAL_MS);
 
         return () => clearInterval(interval);
     }, []);

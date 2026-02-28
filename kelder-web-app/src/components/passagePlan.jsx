@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useThemeContext } from './ThemeContext';
 import axios from 'axios';
 import { apiUrl } from '../config/api';
+import { SLOW_POLL_INTERVAL_MS } from '../config/constants';
 
 const formatDdMmSs = (value) => {
     if (value === null || value === undefined) {
@@ -52,13 +53,13 @@ const PassagePlan = function(){
                 setPassagePlan(response.data.passage_plan);
                 setError(null);
             } catch (fetchError) {
-                console.error("Error receiving the passage plan", fetchError);
+                if (import.meta.env.DEV) console.error("Error receiving the passage plan", fetchError);
                 setError('Unable to load the passage plan right now.');
             }
         }
 
         requestPassagePlan();
-        const interval = setInterval(requestPassagePlan, 10000);
+        const interval = setInterval(requestPassagePlan, SLOW_POLL_INTERVAL_MS);
         return () => clearInterval(interval);
     }, []);
 

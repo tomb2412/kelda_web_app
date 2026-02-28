@@ -9,6 +9,7 @@ import sailingIcon from '../assets/sailing.svg';
 import anchorIcon from '../assets/anchor.svg';
 import syncDisabledIcon from '../assets/sync_disabled.svg';
 import { apiUrl } from '../config/api';
+import { POLL_INTERVAL_MS } from '../config/constants';
 
 const formatStatus = (status) => {
     if (!status) return '';
@@ -57,7 +58,7 @@ const Header = () => {
                     setVesselStatus(statusText || 'Status: Unknown');
                 }
             } catch (err) {
-                console.error('Failed to fetch vessel state', err);
+                if (import.meta.env.DEV) console.error('Failed to fetch vessel state', err);
                 if (isMounted) {
                     setVesselStatus('Status: Unavailable');
                 }
@@ -65,7 +66,7 @@ const Header = () => {
         };
 
         fetchVesselStatus();
-        const intervalId = setInterval(fetchVesselStatus, 2000);
+        const intervalId = setInterval(fetchVesselStatus, POLL_INTERVAL_MS);
 
         return () => {
             isMounted = false;
@@ -82,7 +83,7 @@ const Header = () => {
                 method: 'POST'
             });
         } catch (err) {
-            console.error('Failed to restart', err);
+            if (import.meta.env.DEV) console.error('Failed to restart', err);
         } finally {
             setIsRestarting(false);
         }

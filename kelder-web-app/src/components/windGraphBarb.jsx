@@ -35,8 +35,6 @@ const WindBarb = () => {
 
                 const response = await axios.get("https://api.open-meteo.com/v1/forecast?latitude=52.1964531&longitude=-2.221358&hourly=temperature_2m,pressure_msl,wind_speed_10m,wind_direction_10m,rain,wind_gusts_10m&models=ukmo_seamless&forecast_days=1");
 
-                console.log("API response:", response.data);
-
                 const timestamps = response.data.hourly.time
                     .map(t => new Date(t).getTime())
                     .filter(
@@ -66,10 +64,6 @@ const WindBarb = () => {
                     }
                 );
 
-                console.log("Temperature Series:", temperatureSeries);
-                console.log("Pressure Series:", pressureSeries);
-                console.log("Wind series:", windSeries);
-
                 // from the usesState hook
                 setSeries([temperatureSeries, pressureSeries, windSeries]);
 
@@ -77,7 +71,6 @@ const WindBarb = () => {
                 setError_wind(null);
 
             } catch (err) {
-                console.log("Error fetching point weather data:", err);
                 setError_wind("Error fetching point weather data");
             }
         };

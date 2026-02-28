@@ -1,6 +1,7 @@
 import React, {useState, useEffect} from 'react';
 import axios from 'axios';
 import { apiUrl } from '../config/api';
+import { POLL_INTERVAL_MS } from '../config/constants';
 
 const formatDdMmSs = (value) => {
     if (value === null || value === undefined) {
@@ -67,11 +68,6 @@ const fallbackGpsData = {
     dtw: '--',
 };
 
-const DEFAULT_REFRESH_MS = 2000;
-const gpsRefreshMs = (() => {
-    const parsed = Number(import.meta.env.API_REFRESH_RATE);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_REFRESH_MS;
-})();
 
 const GpsDisplay = function({}){
     const [gpsData, setGpsData] = useState(null);
@@ -80,12 +76,10 @@ const GpsDisplay = function({}){
     useEffect(()=> {
         const requestGpsData = async () => {
             try {
-                const response = await axios.get(apiUrl('/gps_card_data'));//"http://raspberrypi.local:8000/gps_card_data");//back_up_data_model;// 
-                console.log("Returned GPS data raw: "+ response.data);
+                const response = await axios.get(apiUrl('/gps_card_data'));
                 setGpsData(response.data);
                 setError(null);
             } catch (err) {
-                console.log("Error fetching GPS data: ", err);
                 setError("Error fetching GPS data");
                 //setGpsData(back_up_data_model) // TODO: Remove when live
             }
@@ -93,12 +87,10 @@ const GpsDisplay = function({}){
 
         requestGpsData(); // On startup
 
-        const interval = setInterval(requestGpsData, gpsRefreshMs);
+        const interval = setInterval(requestGpsData, POLL_INTERVAL_MS);
 
         return () => clearInterval(interval);
     }, []);
-
-    console.log(gpsData)
 
     const dataToRender = gpsData ?? fallbackGpsData;
     const hasData = Boolean(gpsData);
