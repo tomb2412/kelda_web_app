@@ -1,11 +1,7 @@
-import React, {useState, useEffect, useRef} from 'react';
-import axios from 'axios';
-import { apiUrl } from '../config/api';
-import { POLL_INTERVAL_MS } from '../config/constants';
+import { useState } from 'react';
 import arrowLeftIcon from '../assets/arrow_left.svg';
 import arrowRightIcon from '../assets/arrow_right.svg';
-
-const LATEST_JOURNEY_URL = apiUrl('/journeys/latest');
+import { useSensorData } from '../context/SensorDataContext';
 
 const formatHeight = (value) => {
     if (value === null || value === undefined || value === '') {
@@ -188,111 +184,30 @@ const fallbackJourney = {
 
 const DepthGuage = function(){
 
-    const [, setError] = useState(null);
-    const [tidal_event, setTidalEvent] = useState({
-        datetime_stamp: "13:22",
-        height_of_tide: "5.2",
-        event: "HW"
-    })
-    const [liveHeight, setLiveHeight] = useState(null);
-    const [bilgeDepth, setBilgeDepth] = useState(null);
-    const [latestJourney, setLatestJourney] = useState([]);
-    const [journeyLimit, setJourneyLimit] = useState(0);
     const [journeyCounter, setjourneyCounter] = useState(0);
-    const [journeyError, setJourneyError] = useState(null);
 
-    const incremementJourneyCounter = async (direction) => {
+    const tidalData  = useSensorData('tidal');
+    const tideData   = useSensorData('tide');
+    const bilgeData  = useSensorData('bilge');
+    const journeyData = useSensorData('journey');
+
+    const tidal_event  = tidalData ?? { datetime_stamp: "13:22", height_of_tide: "5.2", event: "HW" };
+    const liveHeight   = normalizeHeightResponse(tideData);
+    const bilgeDepth   = normalizeHeightResponse(bilgeData);
+    const latestJourney = journeyData?.journeys ?? [];
+    const journeyLimit  = journeyData?.limit ?? 0;
+
+    const incremementJourneyCounter = (direction) => {
         if (direction === "previous"){
-            // Previous means we want to increase the index
-            if (journeyCounter < (journeyLimit-1)){
+            if (journeyCounter < (journeyLimit - 1)){
                 setjourneyCounter(journeyCounter + 1);
             }
         } else if (direction === "next"){
-            // Next means more recent and therefore lower index
             if (journeyCounter > 0){
                 setjourneyCounter(journeyCounter - 1);
             }
         }
     };
-
-    useEffect(()=> {
-        const requestTidalEvent = async () => {
-            try {
-                const response = await axios.get(apiUrl('/get_next_tidal_event'))
-                setTidalEvent(response.data);
-
-                setError(null);
-            } catch (err) {
-                setError(null);
-            }
-        };
-
-        requestTidalEvent();
-
-        const interval = setInterval(requestTidalEvent, POLL_INTERVAL_MS);
-
-        return () => clearInterval(interval);
-    }, []);
-
-    useEffect(() => {
-        const requestHeightOfTide = async () => {
-            try {
-                const response = await axios.get(apiUrl('/get_height_of_tide'));
-                setLiveHeight(normalizeHeightResponse(response.data));
-            } catch (err) {
-                // swallow — stale data stays in state
-            }
-        };
-
-        requestHeightOfTide();
-
-        const interval = setInterval(requestHeightOfTide, POLL_INTERVAL_MS);
-
-        return () => clearInterval(interval);
-    }, []);
-
-    useEffect(() => {
-        const requestBilgeDepth = async () => {
-            try {
-                const response = await axios.get(apiUrl('/bilge_depth'));
-                setBilgeDepth(normalizeHeightResponse(response.data));
-            } catch (err) {
-                setBilgeDepth(null);
-            }
-        };
-
-        requestBilgeDepth();
-
-        const interval = setInterval(requestBilgeDepth, POLL_INTERVAL_MS);
-
-        return () => clearInterval(interval);
-    }, []);
-
-    useEffect(() => {
-        const requestLatestJourney = async () => {
-            try {
-                const response = await axios.get(LATEST_JOURNEY_URL,{
-                    params: {
-                    limit: 10,
-                },
-                    headers: { accept: 'application/json' },
-            });
-                setLatestJourney(response.data.journeys);
-                if (!journeyLimit){
-                    setJourneyLimit(response.data.limit)
-                }
-                setJourneyError(null);
-            } catch (err) {
-                setJourneyLimit(0)
-                setJourneyError('Unable to load previous trip right now.');
-            }
-        };
-
-        requestLatestJourney();
-        const interval = setInterval(requestLatestJourney, POLL_INTERVAL_MS);
-
-        return () => clearInterval(interval);
-    }, []);
 
     let unit = "m"
     const currentHeightDisplay = formatHeight(liveHeight);
@@ -348,14 +263,9 @@ const DepthGuage = function(){
                             </button>
                         </div>
                     </div>
-                    {!latestJourney && !journeyError && (
+                    {!journeyData && (
                         <p className="text-sm mt-1 text-slate-600 dark:text-slate-300">
                             Loading previous trip…
-                        </p>
-                    )}
-                    {journeyError && (
-                        <p className="text-sm mt-1 text-red-500">
-                            {journeyError}
                         </p>
                     )}
                     <div className="w-full overflow-y-auto max-h-64">

@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { ComposableMap, Geographies, Geography, Graticule, Line, Marker, ZoomableGroup } from "react-simple-maps"
 import solentDataUrl from "../assets/marks,water,land.geojson?url"
-import { apiUrl } from "../config/api"
-import { POLL_INTERVAL_MS } from "../config/constants"
-import axios from 'axios';
+import { useSensorData } from "../context/SensorDataContext"
 
 const MAP_COLORS = {
   cardBackgroundTint: "rgba(2, 48, 89, 0.1)",
@@ -85,10 +83,16 @@ export const SolentChart = () => {
     event.preventDefault()
   }
 
-  const [gpsData, setGpsData] = useState(null);
+  const gpsData = useSensorData('gpsPosition')
   const [animatedCoords, setAnimatedCoords] = useState(null)
-  const [trackCoords, setTrackCoords] = useState([])
   const currentCoordsRef = useRef(null)
+
+  const rawTrack = Array.isArray(gpsData?.track) ? gpsData.track : []
+  const trackCoords = rawTrack
+    .map(({ longitude, latitude }) => [Number(longitude), Number(latitude)])
+    .filter(([lon, lat]) => Number.isFinite(lon) && Number.isFinite(lat))
+    .slice(-TRACK_POINT_LIMIT)
+
   const hasGpsCoordinates =
     Number.isFinite(Number(gpsData?.longitude)) && Number.isFinite(Number(gpsData?.latitude))
   const markerCoordinates = hasGpsCoordinates
@@ -97,32 +101,6 @@ export const SolentChart = () => {
   const markerRotation = normalizeBearing(gpsData?.cog) ?? 0
   const displayedCoordinates = animatedCoords ?? markerCoordinates
   const markerScale = MARKER_BASE_SCALE + (MAX_ZOOM - viewport.zoom) * MARKER_SCALE_FACTOR
-
-  useEffect(()=> {
-    const requestGPSData = async () => {
-      try {
-        const response = await axios.get(apiUrl('/gps_map_position'));
-        // console.log("Retrieved gps data for the chart"+ response.data);
-        const nextTrack = Array.isArray(response.data?.track)
-          ? response.data.track
-              .map(({ longitude, latitude }) => [Number(longitude), Number(latitude)])
-              .filter(([lon, lat]) => Number.isFinite(lon) && Number.isFinite(lat))
-          : []
-        const limitedTrack = nextTrack.length > TRACK_POINT_LIMIT
-          ? nextTrack.slice(nextTrack.length - TRACK_POINT_LIMIT)
-          : nextTrack
-        setTrackCoords(limitedTrack)
-        setGpsData(response.data);
-      } catch (err){
-        // swallow — stale data stays in state
-      }
-    };
-
-    requestGPSData();
-    const interval = setInterval(requestGPSData, POLL_INTERVAL_MS)
-
-    return () => clearInterval(interval)
-  }, [])
 
   useEffect(() => {
     if (!markerCoordinates) return

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {useThemeContext} from './ThemeContext';
 import { SignInButton, useUser } from '@clerk/clerk-react';
 import signInIcon from '../assets/sign_in.svg';
@@ -9,7 +9,7 @@ import sailingIcon from '../assets/sailing.svg';
 import anchorIcon from '../assets/anchor.svg';
 import syncDisabledIcon from '../assets/sync_disabled.svg';
 import { apiUrl } from '../config/api';
-import { POLL_INTERVAL_MS } from '../config/constants';
+import { useSensorData } from '../context/SensorDataContext';
 
 const formatStatus = (status) => {
     if (!status) return '';
@@ -21,8 +21,15 @@ const Header = () => {
     const {theme, toggleTheme} = useThemeContext();
     const { isSignedIn } = useUser();
     const [isRestarting, setIsRestarting] = useState(false);
-    const [vesselStatus, setVesselStatus] = useState('Loading...');
+    const vesselData = useSensorData('vessel');
     const isDark = theme === 'dark';
+
+    const vesselStatus = vesselData
+        ? (typeof vesselData === 'string'
+            ? vesselData
+            : vesselData?.vessel_state || vesselData?.status || vesselData?.state || 'Status: Unknown')
+        : 'Loading...';
+
     const normalizedStatus = (vesselStatus || '').trim().toLowerCase();
     const isUnavailable = normalizedStatus.includes('unavailable');
     const displayStatus = formatStatus((vesselStatus || '').trim());
@@ -34,45 +41,6 @@ const Header = () => {
             : isUnavailable
                 ? syncDisabledIcon
                 : null;
-
-    useEffect(() => {
-        let isMounted = true;
-
-        const fetchVesselStatus = async () => {
-            try {
-                const url = apiUrl('/vessel_state');
-                const response = await fetch(url, {
-                    headers: { accept: 'application/json' }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Request failed with status ${response.status}`);
-                }
-
-                const data = await response.json();
-                const statusText = typeof data === 'string'
-                    ? data
-                    : data?.vessel_state || data?.status || data?.state || '';
-
-                if (isMounted) {
-                    setVesselStatus(statusText || 'Status: Unknown');
-                }
-            } catch (err) {
-                if (import.meta.env.DEV) console.error('Failed to fetch vessel state', err);
-                if (isMounted) {
-                    setVesselStatus('Status: Unavailable');
-                }
-            }
-        };
-
-        fetchVesselStatus();
-        const intervalId = setInterval(fetchVesselStatus, POLL_INTERVAL_MS);
-
-        return () => {
-            isMounted = false;
-            clearInterval(intervalId);
-        };
-    }, []);
 
     const handleRestart = async () => {
         if (isRestarting) return;

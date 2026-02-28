@@ -1,8 +1,5 @@
-import { useState, useEffect } from 'react';
 import { useThemeContext } from './ThemeContext';
-import axios from 'axios';
-import { apiUrl } from '../config/api';
-import { SLOW_POLL_INTERVAL_MS } from '../config/constants';
+import { useSensorData } from '../context/SensorDataContext';
 
 const formatDdMmSs = (value) => {
     if (value === null || value === undefined) {
@@ -43,27 +40,9 @@ const fallbackPlan = {
 const PassagePlan = function(){
     const {theme} = useThemeContext();
 
-    const [passagePlan, setPassagePlan] = useState(null);
-    const [error, setError] = useState(null);
-
-    useEffect(() => {
-        const requestPassagePlan = async () => {
-            try {
-                const response = await axios.get(apiUrl('/passage_plan'));
-                setPassagePlan(response.data.passage_plan);
-                setError(null);
-            } catch (fetchError) {
-                if (import.meta.env.DEV) console.error("Error receiving the passage plan", fetchError);
-                setError('Unable to load the passage plan right now.');
-            }
-        }
-
-        requestPassagePlan();
-        const interval = setInterval(requestPassagePlan, SLOW_POLL_INTERVAL_MS);
-        return () => clearInterval(interval);
-    }, []);
-
-    const isLoading = !passagePlan && !error;
+    const passagePlanData = useSensorData('passagePlan');
+    const passagePlan = passagePlanData?.passage_plan ?? null;
+    const isLoading = !passagePlan;
     const planToRender = passagePlan ?? fallbackPlan;
     const waypointsSource = Array.isArray(planToRender.course_to_steer) ? planToRender.course_to_steer : [];
     const waypoints = waypointsSource.length ? waypointsSource : fallbackPlan.course_to_steer;

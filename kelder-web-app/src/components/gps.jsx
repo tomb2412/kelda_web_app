@@ -1,7 +1,4 @@
-import React, {useState, useEffect} from 'react';
-import axios from 'axios';
-import { apiUrl } from '../config/api';
-import { POLL_INTERVAL_MS } from '../config/constants';
+import { useSensorData } from '../context/SensorDataContext';
 
 const formatDdMmSs = (value) => {
     if (value === null || value === undefined) {
@@ -69,31 +66,9 @@ const fallbackGpsData = {
 };
 
 
-const GpsDisplay = function({}){
-    const [gpsData, setGpsData] = useState(null);
-    const [error, setError] = useState(null);
-    
-    useEffect(()=> {
-        const requestGpsData = async () => {
-            try {
-                const response = await axios.get(apiUrl('/gps_card_data'));
-                setGpsData(response.data);
-                setError(null);
-            } catch (err) {
-                setError("Error fetching GPS data");
-                //setGpsData(back_up_data_model) // TODO: Remove when live
-            }
-        };
-
-        requestGpsData(); // On startup
-
-        const interval = setInterval(requestGpsData, POLL_INTERVAL_MS);
-
-        return () => clearInterval(interval);
-    }, []);
-
+const GpsDisplay = function(){
+    const gpsData = useSensorData('gps');
     const dataToRender = gpsData ?? fallbackGpsData;
-    const hasData = Boolean(gpsData);
 
     return (
         <div className="p-3 rounded-xl bg-[#024887]/10 dark:bg-slate-800/90">
@@ -143,11 +118,6 @@ const GpsDisplay = function({}){
                     </div>
                 </div>
             </div>
-            {error && (
-                <p className="text-sm text-center mt-2 text-red-500 dark:text-red-300">
-                    {error}
-                </p>
-            )}
         </div>
     )
 }
