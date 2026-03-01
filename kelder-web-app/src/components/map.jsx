@@ -1,33 +1,20 @@
-import { useState, useEffect, useRef } from "react"
-import { ComposableMap, Geographies, Geography, Graticule, Line, Marker, ZoomableGroup } from "react-simple-maps"
+import { useEffect, useRef, memo } from "react"
+import { MapContainer, useMap } from "react-leaflet"
+import L from "leaflet"
+import "leaflet/dist/leaflet.css"
 import solentDataUrl from "../assets/marks,water,land.geojson?url"
 import { useSensorData } from "../context/SensorDataContext"
 
-const fixWindingOrder = (geo) => {
-    const { type, coordinates } = geo.geometry;
-    let fixed;
-    if (type === 'Polygon') {
-        fixed = coordinates.map((ring) => ring.slice().reverse());
-    } else if (type === 'MultiPolygon') {
-        fixed = coordinates.map((poly) => poly.map((ring) => ring.slice().reverse()));
-    } else {
-        return geo;
-    }
-    return { ...geo, geometry: { ...geo.geometry, coordinates: fixed } };
-};
+// ─── Constants ───────────────────────────────────────────────────────────────
 
 const MAP_COLORS = {
-  cardBackgroundTint: "rgba(2, 48, 89, 0.1)",
   mapBackground: "rgb(244, 236, 178)",
   landStroke: "rgb(171, 128, 34)",
   solentFill: "rgb(141,163,192)",
   solentStroke: "rgb(141,163,192)",
-  graticule: "rgba(0, 0, 0, 1)",
   coastline: "rgb(26, 112, 0)",
   depthContour: "rgba(136, 183, 208, 1)",
   defaultMarkerFill: "rgba(255, 204, 0, 1)",
-  defaultMarkerStroke: "rgba(0, 0, 0, 1)",
-  markerHighlightStroke: "rgba(255, 255, 255, 1)",
   portMarkerFill: "rgba(168, 42, 30, 1)",
   starboardMarkerFill: "rgba(13, 110, 50, 1)",
   cardinalMarkerFill: "rgba(214, 164, 0, 1)",
@@ -38,19 +25,25 @@ const MAP_COLORS = {
   harbourStroke: "rgba(0, 63, 136, 1)",
   anchorageStroke: "rgba(240, 233, 194, 1)",
   landmarkFill: "rgba(181, 101, 29, 1)",
-  landmarkStroke: "rgba(74, 46, 5, 1)",
 }
 
-const MAP_CENTER = [-1.30, 50.8]
-const MIN_ZOOM = 0.8
-const MAX_ZOOM = 8
-const ZOOM_STEP = 0.4
+const MAP_CENTER = [50.8, -1.30]  // Leaflet uses [lat, lon]
+const DEFAULT_ZOOM = 12
+const MIN_ZOOM = 10
+const MAX_ZOOM = 17
+const TRACK_POINT_LIMIT = 500
 const MARKER_ANIMATION_MS = 800
 const MARKER_ANIMATION_MAX_MS = 1500
 const MARKER_ANIMATION_MIN_MS = 250
-const TRACK_POINT_LIMIT = 500
-const MARKER_BASE_SCALE = 1
-const MARKER_SCALE_FACTOR = 0.12
+
+const POINT_SEAMARK_TYPES = new Set([
+  "buoy", "beacon", "buoy_lateral", "beacon_lateral",
+  "buoy_cardinal", "beacon_cardinal", "buoy_special_purpose",
+  "beacon_special_purpose", "harbour", "berth", "light_minor",
+  "light_major", "anchorage", "gate", "landmark",
+])
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const normalizeBearing = (value) => {
   const num = Number(value)
@@ -62,547 +55,335 @@ const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3)
 
 const computeAnimationDuration = (start, target) => {
   if (!start || !target) return MARKER_ANIMATION_MS
-  const dx = target[0] - start[0]
-  const dy = target[1] - start[1]
-  const distance = Math.sqrt(dx * dx + dy * dy)
-  const msPerDegree = 40000 // tuned for Solent-scale moves (deg -> ms)
-  const dynamicMs = distance * msPerDegree
-  return Math.min(MARKER_ANIMATION_MAX_MS, Math.max(MARKER_ANIMATION_MIN_MS, dynamicMs))
+  const dlat = target[0] - start[0]
+  const dlon = target[1] - start[1]
+  const dist = Math.sqrt(dlat * dlat + dlon * dlon)
+  return Math.min(MARKER_ANIMATION_MAX_MS, Math.max(MARKER_ANIMATION_MIN_MS, dist * 40000))
 }
 
-export const SolentChart = () => {
-  const [viewport, setViewport] = useState({
-    center: MAP_CENTER,
-    zoom: 1,
+// Canvas circle options per seamark type – all share one canvas renderer
+const getSeamarkOptions = (properties) => {
+  const type = properties["seamark:type"]
+  const catLateral = properties["seamark:buoy_lateral:category"]
+  const catCardinal = properties["seamark:buoy_cardinal:category"]
+
+  let fillColor = MAP_COLORS.defaultMarkerFill
+  let color = "#000000"
+  let radius = 4
+
+  if (catLateral === "port")      { fillColor = MAP_COLORS.portMarkerFill;     color = "#ffffff" }
+  else if (catLateral === "starboard") { fillColor = MAP_COLORS.starboardMarkerFill; color = "#ffffff" }
+  else if (catCardinal)           { fillColor = MAP_COLORS.cardinalMarkerFill }
+  else if (type === "buoy_special_purpose" || type === "beacon_special_purpose")
+                                  { fillColor = MAP_COLORS.specialPurposeFill }
+  else if (type === "light_minor") { fillColor = MAP_COLORS.lightFill; color = MAP_COLORS.lightStroke; radius = 3 }
+  else if (type === "light_major") { fillColor = MAP_COLORS.lightFill; color = MAP_COLORS.lightStroke; radius = 5 }
+  else if (type === "harbour" || type === "berth")
+                                  { fillColor = MAP_COLORS.harbourFill; color = MAP_COLORS.harbourStroke }
+  else if (type === "anchorage")  { fillColor = "transparent";          color = MAP_COLORS.anchorageStroke }
+  else if (type === "landmark")   { fillColor = MAP_COLORS.landmarkFill }
+
+  return { fillColor, color, radius, fillOpacity: 1, weight: 0.8 }
+}
+
+// SVG vessel marker – rotated divIcon, so it stays outside the canvas layer
+const createVesselIcon = (rotation) =>
+  L.divIcon({
+    html: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="-10 -10 20 20">
+      <polygon points="0,-8 7,6 0,1 -7,6"
+        fill="rgba(168,42,30,1)" stroke="rgba(0,0,0,1)" stroke-width="1"
+        transform="rotate(${rotation})"/>
+    </svg>`,
+    className: "",
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
   })
-  const animationFrameRef = useRef(null)
 
-  const clampZoom = (value) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value))
+// ─── Module-level GeoJSON cache ───────────────────────────────────────────────
+// Parsed once; survives hot-reloads and multiple component mounts.
+let geojsonCache = null
 
-  const handleZoomChange = (delta) => {
-    setViewport((prev) => ({
-      ...prev,
-      zoom: clampZoom(prev.zoom + delta),
-    }))
-  }
-
-  const handleMoveEnd = ({ coordinates, zoom }) => {
-    setViewport({
-      center: coordinates,
-      zoom: clampZoom(zoom),
-    })
-  }
-  const handleWheelCapture = (event) => {
-    event.preventDefault()
-  }
-
-  const gpsData = useSensorData('gpsPosition')
-  const [animatedCoords, setAnimatedCoords] = useState(null)
-  const currentCoordsRef = useRef(null)
-
-  const rawTrack = Array.isArray(gpsData?.track) ? gpsData.track : []
-  const trackCoords = rawTrack
-    .map(({ longitude, latitude }) => [Number(longitude), Number(latitude)])
-    .filter(([lon, lat]) => Number.isFinite(lon) && Number.isFinite(lat))
-    .slice(-TRACK_POINT_LIMIT)
-
-  const hasGpsCoordinates =
-    Number.isFinite(Number(gpsData?.longitude)) && Number.isFinite(Number(gpsData?.latitude))
-  const markerCoordinates = hasGpsCoordinates
-    ? [Number(gpsData.longitude), Number(gpsData.latitude)]
-    : null
-  const markerRotation = normalizeBearing(gpsData?.cog) ?? 0
-  const displayedCoordinates = animatedCoords ?? markerCoordinates
-  const markerScale = MARKER_BASE_SCALE + (MAX_ZOOM - viewport.zoom) * MARKER_SCALE_FACTOR
+// ─── Static base layer ────────────────────────────────────────────────────────
+// Rendered once on mount, never re-renders.
+// All features share a single L.canvas() instance → one <canvas> element.
+const SolentBaseLayer = memo(function SolentBaseLayer() {
+  const map = useMap()
 
   useEffect(() => {
-    if (!markerCoordinates) return
+    let cancelled = false
+    const addedLayers = []
 
-    const startCoords = currentCoordsRef.current ?? animatedCoords ?? markerCoordinates
-    const targetCoords = markerCoordinates
+    const buildLayers = (data) => {
+      if (cancelled) return
 
-    if (!currentCoordsRef.current) {
-      currentCoordsRef.current = targetCoords
-      setAnimatedCoords(targetCoords)
-      return
+      // Single canvas renderer for ALL static features
+      const renderer = L.canvas({ padding: 0.2 })
+      const features = data.features
+
+      // --- Land polygons (and island rings inside water) ---
+      const landLayer = L.geoJSON(
+        features.filter(
+          (f) =>
+            f.properties.natural === "land" ||
+            (f.properties.natural === "water" &&
+              f.geometry.type === "Polygon" &&
+              f.geometry.coordinates.length > 1)
+        ),
+        {
+          renderer,
+          interactive: false,
+          style: () => ({
+            fillColor: MAP_COLORS.mapBackground,
+            fillOpacity: 1,
+            color: MAP_COLORS.landStroke,
+            weight: 0.4,
+          }),
+        }
+      ).addTo(map)
+      addedLayers.push(landLayer)
+
+      // --- Water polygons (sea, bays) ---
+      const waterLayer = L.geoJSON(
+        features.filter((f) => {
+          const p = f.properties
+          return (
+            (p.natural === "water" || p.natural === "bay" || p.place === "sea") &&
+            !(f.geometry.type === "Polygon" && f.geometry.coordinates.length > 1)
+          )
+        }),
+        {
+          renderer,
+          interactive: false,
+          style: () => ({
+            fillColor: MAP_COLORS.solentFill,
+            fillOpacity: 1,
+            color: MAP_COLORS.solentStroke,
+            weight: 0.4,
+          }),
+        }
+      ).addTo(map)
+      addedLayers.push(waterLayer)
+
+      // --- Coastlines + depth contours ---
+      const coastLayer = L.geoJSON(
+        features.filter(
+          (f) =>
+            f.properties.natural === "coastline" ||
+            f.properties["seamark:type"] === "depth_contour"
+        ),
+        {
+          renderer,
+          interactive: false,
+          style: (f) => {
+            const isDepth = f.properties["seamark:type"] === "depth_contour"
+            return {
+              fill: false,
+              color: isDepth ? MAP_COLORS.depthContour : MAP_COLORS.coastline,
+              weight: isDepth ? 1 : 2,
+            }
+          },
+        }
+      ).addTo(map)
+      addedLayers.push(coastLayer)
+
+      // --- Seamarks (1 200+ point features on the shared canvas) ---
+      const seamarkLayer = L.geoJSON(
+        features.filter(
+          (f) =>
+            f.geometry?.type === "Point" &&
+            POINT_SEAMARK_TYPES.has(f.properties["seamark:type"])
+        ),
+        {
+          interactive: false,
+          pointToLayer: (f, latlng) =>
+            L.circleMarker(latlng, {
+              renderer,
+              ...getSeamarkOptions(f.properties),
+            }),
+        }
+      ).addTo(map)
+      addedLayers.push(seamarkLayer)
     }
 
-    if (startCoords[0] === targetCoords[0] && startCoords[1] === targetCoords[1]) {
-      return
+    if (geojsonCache) {
+      buildLayers(geojsonCache)
+    } else {
+      fetch(solentDataUrl)
+        .then((r) => r.json())
+        .then((data) => {
+          geojsonCache = data
+          buildLayers(data)
+        })
     }
-
-    const duration = computeAnimationDuration(startCoords, targetCoords)
-    const startTime = performance.now()
-    const animate = (time) => {
-      const rawProgress = Math.min((time - startTime) / duration, 1)
-      const progress = easeOutCubic(rawProgress)
-      const lon = startCoords[0] + (targetCoords[0] - startCoords[0]) * progress
-      const lat = startCoords[1] + (targetCoords[1] - startCoords[1]) * progress
-      const nextCoords = [lon, lat]
-      currentCoordsRef.current = nextCoords
-      setAnimatedCoords(nextCoords)
-
-      if (rawProgress < 1) {
-        animationFrameRef.current = requestAnimationFrame(animate)
-      } else {
-        currentCoordsRef.current = targetCoords
-        animationFrameRef.current = null
-      }
-    }
-
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current)
-    }
-    animationFrameRef.current = requestAnimationFrame(animate)
 
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current)
+      cancelled = true
+      addedLayers.forEach((l) => map.removeLayer(l))
+    }
+  }, [map])  // runs once – map ref is stable
+
+  return null
+})
+
+// ─── Dynamic vessel layer ─────────────────────────────────────────────────────
+// Track and GPS marker are updated imperatively via Leaflet API.
+// No React state changes during animation → zero extra React renders.
+const VesselLayer = memo(function VesselLayer({ gpsData }) {
+  const map = useMap()
+  const trackRef      = useRef(null)
+  const markerRef     = useRef(null)
+  const animFrameRef  = useRef(null)
+  const currentLLRef  = useRef(null)   // [lat, lon] of marker as it animates
+  const isFirstRef    = useRef(true)
+
+  // Initialise track polyline + vessel marker once
+  useEffect(() => {
+    const renderer = L.canvas()
+
+    trackRef.current = L.polyline([], {
+      renderer,
+      color: "rgba(168, 42, 30, 1)",
+      weight: 2.5,
+      lineCap: "round",
+      lineJoin: "round",
+      interactive: false,
+    }).addTo(map)
+
+    markerRef.current = L.marker(MAP_CENTER, {
+      icon: createVesselIcon(0),
+      zIndexOffset: 1000,
+      opacity: 0,           // hidden until first valid GPS fix
+      interactive: false,
+    }).addTo(map)
+
+    return () => {
+      if (trackRef.current)  map.removeLayer(trackRef.current)
+      if (markerRef.current) map.removeLayer(markerRef.current)
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
+    }
+  }, [map])
+
+  // Update track polyline when track data changes
+  useEffect(() => {
+    if (!trackRef.current) return
+    const raw = Array.isArray(gpsData?.track) ? gpsData.track : []
+    const latLngs = raw
+      .map(({ longitude, latitude }) => [Number(latitude), Number(longitude)])
+      .filter(([lat, lon]) => Number.isFinite(lat) && Number.isFinite(lon))
+      .slice(-TRACK_POINT_LIMIT)
+    trackRef.current.setLatLngs(latLngs)
+  }, [gpsData?.track])
+
+  // Animate GPS marker to new position (no React state – pure Leaflet API)
+  useEffect(() => {
+    const hasCoords =
+      Number.isFinite(Number(gpsData?.longitude)) &&
+      Number.isFinite(Number(gpsData?.latitude))
+    if (!hasCoords || !markerRef.current) return
+
+    const targetLat = Number(gpsData.latitude)
+    const targetLon = Number(gpsData.longitude)
+    const cog = normalizeBearing(gpsData?.cog) ?? 0
+
+    markerRef.current.setIcon(createVesselIcon(cog))
+    markerRef.current.setOpacity(1)
+
+    // First fix: snap directly, no animation
+    if (isFirstRef.current) {
+      isFirstRef.current = false
+      markerRef.current.setLatLng([targetLat, targetLon])
+      currentLLRef.current = [targetLat, targetLon]
+      return
+    }
+
+    const start = currentLLRef.current
+    if (!start || (start[0] === targetLat && start[1] === targetLon)) return
+
+    const duration  = computeAnimationDuration(start, [targetLat, targetLon])
+    const startTime = performance.now()
+
+    const animate = (now) => {
+      const rawProgress = Math.min((now - startTime) / duration, 1)
+      const progress    = easeOutCubic(rawProgress)
+      const lat = start[0] + (targetLat - start[0]) * progress
+      const lon = start[1] + (targetLon - start[1]) * progress
+      markerRef.current.setLatLng([lat, lon])
+      currentLLRef.current = [lat, lon]
+      if (rawProgress < 1) {
+        animFrameRef.current = requestAnimationFrame(animate)
+      } else {
+        animFrameRef.current = null
       }
     }
-  }, [markerCoordinates])
 
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
+    animFrameRef.current = requestAnimationFrame(animate)
+
+    return () => {
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current)
+        animFrameRef.current = null
+      }
+    }
+  }, [gpsData?.longitude, gpsData?.latitude, gpsData?.cog])
+
+  return null
+})
+
+// ─── Zoom controls (rendered inside MapContainer so useMap() is available) ────
+const ZoomControls = () => {
+  const map = useMap()
   return (
     <div
-      className="rounded-xl p-3 text-slate-800 dark:bg-slate-800/90 bg-[#024887]/10  dark:text-white mb-3"
+      className="absolute right-4 top-4 flex flex-col overflow-hidden rounded-lg shadow"
+      style={{ zIndex: 1001 }}
     >
-      <div className="relative">
-        <ComposableMap
-          projection="geoMercator"
-          projectionConfig={{
-            center: MAP_CENTER, // Solent / Southampton Water region
-            scale: 90000,
-          }}
-          style={{
-            background: MAP_COLORS.mapBackground, // deep ocean tone
-            borderRadius: "0.75rem",
-            width: "100%",
-            height: "50vh",
-          }}
-        >
-          <ZoomableGroup
-            center={viewport.center}
-            zoom={viewport.zoom}
-            minZoom={MIN_ZOOM}
-            maxZoom={MAX_ZOOM}
-            onMoveEnd={handleMoveEnd}
-          >
-          {/* Optional grid lines for chart reference */}
-          <Graticule stroke={MAP_COLORS.graticule} strokeWidth={0.3} />
+      <button
+        type="button"
+        className="bg-white/90 px-3 py-2 text-lg font-semibold text-slate-800 transition hover:bg-white"
+        onClick={() => map.zoomIn()}
+        aria-label="Zoom in"
+      >
+        +
+      </button>
+      <button
+        type="button"
+        className="bg-white/90 px-3 py-2 text-lg font-semibold text-slate-800 transition hover:bg-white"
+        onClick={() => map.zoomOut()}
+        aria-label="Zoom out"
+      >
+        −
+      </button>
+    </div>
+  )
+}
 
-          {/* --- LAND polygons --- */}
-          <Geographies geography={solentDataUrl}>
-          {({ geographies }) =>
-              geographies
-              // OSM land or water polygons that are "holes" in the sea
-              .filter(
-                  (geo) =>
-                  geo.properties.natural === "land" ||
-                  (geo.properties.natural === "water" &&
-                      geo.geometry.type === "Polygon" &&
-                      geo.geometry.coordinates.length > 1) // rings inside = islands
-              )
-              .map((geo) => (
-                  <Geography
-                  key={geo.rsmKey}
-                  geography={geo}
-                  fill={MAP_COLORS.mapBackground}
-                  stroke={MAP_COLORS.landStroke}
-                  strokeWidth={0.4}
-                  />
-              ))
-          }
-          </Geographies>
+// ─── Main component ───────────────────────────────────────────────────────────
+export const SolentChart = () => {
+  const gpsData = useSensorData("gpsPosition")
 
-          {/* --- THE SOLENT WATER AREA ONLY --- */}
-          <Geographies geography={solentDataUrl}>
-          {({ geographies }) =>
-              geographies
-              .filter((geo) => {
-                  const p = geo.properties
-                  return (
-                  p.name === "The Solent" ||
-                  p["int_name"] === "Solent" ||
-                  p["natural"] === "strait" ||
-                  p["wikidata"] === "Q1143832" ||
-                  p["wikipedia"]?.includes("The_Solent")
-                  )
-              })
-              .map((geo) => {
-                  const fixedGeo = geo.geometry.type === 'Polygon' && geo.geometry.coordinates?.length
-                      ? fixWindingOrder(geo)
-                      : geo;
-
-                  return (
-                  <Geography
-                      key={geo.rsmKey}
-                      geography={fixedGeo}
-                      fill={MAP_COLORS.solentFill}
-                      stroke={MAP_COLORS.solentStroke}
-                      strokeWidth={0.4}
-                  />
-                  )
-              })
-          }
-          </Geographies>
-          {/* --- MAIN WATER polygons (sea, bays) --- */}
-          <Geographies geography={solentDataUrl}>
-          {({ geographies }) =>
-              geographies
-              .filter(
-                  (geo) =>
-                  (geo.properties.natural === "water" ||
-                      geo.properties.natural === "bay" ||
-                      geo.properties.place === "sea"
-                  ) &&
-                  // exclude polygons that have interior rings (islands)
-                  !(geo.geometry.type === "Polygon" && geo.geometry.coordinates.length > 1)
-              )
-              .map((geo) => {
-                  const fixedGeo = (
-                      geo.geometry.type === 'Polygon' ||
-                      geo.geometry.type === 'MultiPolygon'
-                  ) && Array.isArray(geo.geometry.coordinates)
-                      ? fixWindingOrder(geo)
-                      : geo;
-
-                  return (
-                  <Geography
-                      key={geo.rsmKey}
-                      geography={fixedGeo}
-                      fill={MAP_COLORS.solentFill}   // blue sea
-                      stroke={MAP_COLORS.solentStroke}
-                      strokeWidth={0.4}
-                  />
-                  )
-              })
-          }
-          </Geographies>
-
-          {/* --- COASTLINES, CONTOURS, ETC. --- */}
-          <Geographies geography={solentDataUrl}>
-          {({ geographies }) =>
-              geographies
-              .filter(
-                  (geo) =>
-                  geo.properties.natural === "coastline" ||
-                  geo.properties["seamark:type"] === "depth_contour"
-              )
-              .map((geo) => {
-                  const seamarkType = geo.properties["seamark:type"]
-                  const stroke =
-                  seamarkType === "depth_contour" ? MAP_COLORS.depthContour : MAP_COLORS.coastline
-                  const strokeWidth = seamarkType === "depth_contour" ? 10 : 2
-                  return (
-                  <Geography
-                      key={geo.rsmKey}
-                      geography={geo}
-                      fill="none"
-                      stroke={stroke}
-                      strokeWidth={strokeWidth}
-                  />
-                  )
-              })
-          }
-          </Geographies>
-
-
-          {/* Solent seamarks, etc. */}
-          <Geographies geography={solentDataUrl}>
-              {({ geographies }) =>
-              geographies.map((geo) => {
-                  const p = geo.properties
-                  const type = p["seamark:type"]
-                  const catLateral = p["seamark:buoy_lateral:category"]
-                  const catCardinal = p["seamark:buoy_cardinal:category"]
-                  const [lon, lat] = geo.geometry.coordinates
-
-                  // render only point-like features
-                  if (
-                  [
-                      "buoy",
-                      "beacon",
-                      "buoy_lateral",
-                      "beacon_lateral",
-                      "buoy_cardinal",
-                      "beacon_cardinal",
-                      "buoy_special_purpose",
-                      "beacon_special_purpose",
-                      "harbour",
-                      "berth",
-                      "light_minor",
-                      "light_major",
-                      "anchorage",
-                      "gate",
-                      "landmark",
-                  ].includes(type)
-                  ) {
-                  let fill = MAP_COLORS.defaultMarkerFill
-                  let stroke = MAP_COLORS.defaultMarkerStroke
-                  let r = 3
-                  let shape = "circle"
-
-                  // --- Lateral marks ---
-                  if (catLateral === "port") {
-                      fill = MAP_COLORS.portMarkerFill // red
-                      stroke = MAP_COLORS.markerHighlightStroke
-                  }
-                  if (catLateral === "starboard") {
-                      fill = MAP_COLORS.starboardMarkerFill // green
-                      stroke = MAP_COLORS.markerHighlightStroke
-                  }
-
-                  // --- Cardinal marks ---
-                  if (catCardinal) {
-                      fill = MAP_COLORS.cardinalMarkerFill
-                      stroke = MAP_COLORS.defaultMarkerStroke
-                      shape = "diamond"
-                  }
-
-                  // --- Special purpose (yellow) ---
-                  if (type === "buoy_special_purpose" || type === "beacon_special_purpose") {
-                      fill = MAP_COLORS.specialPurposeFill
-                      stroke = MAP_COLORS.defaultMarkerStroke
-                      shape = "triangle"
-                  }
-
-                  // --- Lights ---
-                  if (type === "light_minor") {
-                      fill = MAP_COLORS.lightFill
-                      stroke = MAP_COLORS.lightStroke
-                      r = 2
-                      shape = "star"
-                  }
-                  if (type === "light_major") {
-                      fill = MAP_COLORS.lightFill
-                      stroke = MAP_COLORS.lightStroke
-                      r = 3.5
-                      shape = "star"
-                  }
-
-                  // --- Harbour & berth ---
-                  if (type === "harbour" || type === "berth") {
-                      fill = MAP_COLORS.harbourFill
-                      stroke = MAP_COLORS.harbourStroke
-                      r = 3
-                      shape = "square"
-                  }
-
-                  // --- Anchorage areas ---
-                  if (type === "anchorage") {
-                      fill = "none"
-                      stroke = MAP_COLORS.anchorageStroke
-                      shape = "anchor"
-                  }
-
-                  // --- Gates & landmarks ---
-                  if (type === "gate") {
-                      fill = MAP_COLORS.lightFill
-                      stroke = MAP_COLORS.defaultMarkerStroke
-                      shape = "gate"
-                  }
-                  if (type === "landmark") {
-                      fill = MAP_COLORS.landmarkFill
-                      stroke = MAP_COLORS.landmarkStroke
-                      shape = "triangle"
-                  }
-
-                  // --- Draw marker symbol ---
-                  return (
-                      <Marker key={geo.rsmKey} coordinates={[lon, lat]}>
-                      {shape === "circle" && (
-                          <circle r={r} fill={fill} stroke={stroke} strokeWidth={0.8} />
-                      )}
-                      {shape === "diamond" && (
-                          <polygon
-                          points="0,-3 3,0 0,3 -3,0"
-                          fill={fill}
-                          stroke={stroke}
-                          strokeWidth={0.6}
-                          />
-                      )}
-                      {shape === "triangle" && (
-                          <polygon
-                          points="0,-3 3,3 -3,3"
-                          fill={fill}
-                          stroke={stroke}
-                          strokeWidth={0.6}
-                          />
-                      )}
-                      {shape === "square" && (
-                          <rect
-                          x={-2.5}
-                          y={-2.5}
-                          width={5}
-                          height={5}
-                          fill={fill}
-                          stroke={stroke}
-                          strokeWidth={0.6}
-                          />
-                      )}
-                      {shape === "star" && (
-                          <path
-                          d="M0,-3 L1,0 L3,0 L1.5,1.5 L2,3 L0,2 L-2,3 L-1.5,1.5 L-3,0 L-1,0 Z"
-                          fill={fill}
-                          stroke={stroke}
-                          strokeWidth={0.5}
-                          />
-                      )}
-                      {shape === "anchor" && (
-                          <path
-                          d="M0,-2 L0,2 M-2,2 A2,2 0 0,0 2,2"
-                          fill="none"
-                          stroke={stroke}
-                          strokeWidth={0.8}
-                          />
-                      )}
-                      {shape === "gate" && (
-                          <path
-                          d="M-2,-2 L2,-2 M-2,2 L2,2 M-2,-2 L-2,2 M2,-2 L2,2"
-                          fill="none"
-                          stroke={stroke}
-                          strokeWidth={0.6}
-                          />
-                      )}
-                      </Marker>
-                  )
-                  }
-                  return null
-              })
-              }
-          </Geographies>
-          {trackCoords.length > 1 && (
-            <g>
-              {trackCoords.slice(1).map((coord, idx) => (
-                <Line
-                  key={`track-${idx}`}
-                  from={trackCoords[idx]}
-                  to={coord}
-                  stroke="rgba(168, 42, 30, 1)"
-                  strokeWidth={2.5}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              ))}
-            </g>
-          )}
-          {displayedCoordinates && (
-            <Marker coordinates={displayedCoordinates}>
-              <polygon
-                points="0,-6 7,6, 0,0 -7,6 "
-                transform={`rotate(${markerRotation}) scale(${markerScale})`}
-                fill='rgba(168, 42, 30, 1)'
-                stroke='rgba(0, 0, 0, 1)'
-                strokeWidth={1}
-                />
-            </Marker>
-          )}
-          </ZoomableGroup>
-        </ComposableMap>
-        <div className="absolute right-4 top-4 z-10 flex flex-col overflow-hidden rounded-lg shadow">
-          <button
-            type="button"
-            className="bg-white/90 px-3 py-2 text-lg font-semibold text-slate-800 transition hover:bg-white disabled:opacity-50"
-            onClick={() => handleZoomChange(ZOOM_STEP)}
-            disabled={viewport.zoom >= MAX_ZOOM}
-            aria-label="Zoom in"
-          >
-            +
-          </button>
-          <button
-            type="button"
-            className="bg-white/90 px-3 py-2 text-lg font-semibold text-slate-800 transition hover:bg-white disabled:opacity-50"
-            onClick={() => handleZoomChange(-ZOOM_STEP)}
-            disabled={viewport.zoom <= MIN_ZOOM}
-            aria-label="Zoom out"
-          >
-            -
-          </button>
-        </div>
-      </div>
+  return (
+    <div className="rounded-xl p-3 text-slate-800 dark:bg-slate-800/90 bg-[#024887]/10 dark:text-white mb-3">
+      <MapContainer
+        center={MAP_CENTER}
+        zoom={DEFAULT_ZOOM}
+        minZoom={MIN_ZOOM}
+        maxZoom={MAX_ZOOM}
+        style={{
+          background: MAP_COLORS.mapBackground,
+          borderRadius: "0.75rem",
+          width: "100%",
+          height: "50vh",
+        }}
+        zoomControl={false}
+        attributionControl={false}
+      >
+        <SolentBaseLayer />
+        <VesselLayer gpsData={gpsData} />
+        <ZoomControls />
+      </MapContainer>
     </div>
   )
 }
 
 export default SolentChart
-
-
-// {/* --- LAND (everything except the Solent polygon) --- */}
-// <Geographies geography={solentDataUrl}>
-//   {({ geographies }) =>
-//     geographies
-//       .filter((geo) => {
-//         const p = geo.properties
-//         // Anything not marked as the Solent itself is "land"
-//         return !(
-//           p.name === "The Solent" ||
-//           p["int_name"] === "Solent" ||
-//           p["natural"] === "strait" ||
-//           p["wikidata"] === "Q1143832" ||
-//           p["wikipedia"]?.includes("The_Solent")
-//         )
-//       })
-//       .map((geo) => (
-//         <Geography
-//           key={geo.rsmKey}
-//           geography={geo}
-//           fill={MAP_COLORS.mapBackground} // sand
-//           stroke={MAP_COLORS.landStroke}
-//           strokeWidth={0.4}
-//         />
-//       ))
-//   }
-// </Geographies>
-
-// {/* --- THE SOLENT WATER AREA ONLY --- */}
-// <Geographies geography={solentDataUrl}>
-//   {({ geographies }) =>
-//     geographies
-//       .filter((geo) => {
-//         const p = geo.properties
-//         return (
-//           p.name === "The Solent" ||
-//           p["int_name"] === "Solent" ||
-//           p["natural"] === "strait" ||
-//           p["wikidata"] === "Q1143832" ||
-//           p["wikipedia"]?.includes("The_Solent")
-//         )
-//       })
-//       .map((geo) => (
-//         <Geography
-//           key={geo.rsmKey}
-//           geography={geo}
-//           fill={MAP_COLORS.solentFill} // sea blue
-//           stroke={MAP_COLORS.solentStroke}
-//           strokeWidth={0.4}
-//         />
-//       ))
-//   }
-// </Geographies>
-
-// {/* --- COASTLINES + DEPTH CONTOURS --- */}
-// <Geographies geography={solentDataUrl}>
-//   {({ geographies }) =>
-//     geographies
-//       .filter(
-//         (geo) =>
-//           geo.properties.natural === "coastline" ||
-//           geo.properties["seamark:type"] === "depth_contour"
-//       )
-//       .map((geo) => {
-//         const seamarkType = geo.properties["seamark:type"]
-//         const stroke =
-//           seamarkType === "depth_contour" ? MAP_COLORS.depthContour : MAP_COLORS.coastline
-//         const strokeWidth = seamarkType === "depth_contour" ? 0.6 : 0.8
-//         return (
-//           <Geography
-//             key={geo.rsmKey}
-//             geography={geo}
-//             fill="none"
-//             stroke={stroke}
-//             strokeWidth={strokeWidth}
-//           />
-//         )
-//       })
-//   }
-// </Geographies>
