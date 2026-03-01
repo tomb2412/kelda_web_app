@@ -17,7 +17,7 @@ export default defineConfig({
         manualChunks: {
           'vendor-react':      ['react', 'react-dom'],
           'vendor-highcharts': ['highcharts', 'highcharts-react-official'],
-          'vendor-maps':       ['react-simple-maps'],
+          'vendor-maps':       ['leaflet', 'react-leaflet'],
           'vendor-ai':         ['ai', '@ai-sdk/react', '@ai-sdk/openai'],
           'vendor-clerk':      ['@clerk/clerk-react'],
         },
