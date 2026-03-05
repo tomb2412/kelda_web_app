@@ -8,7 +8,7 @@ import { useSensorData } from "../context/SensorDataContext"
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const MAP_COLORS = {
-  mapBackground: "rgb(244, 236, 178)",
+  mapBackground: "rgb(255, 255, 255)",
   landStroke: "rgb(171, 128, 34)",
   solentFill: "rgb(141,163,192)",
   solentStroke: "rgb(141,163,192)",
@@ -124,7 +124,7 @@ const SolentBaseLayer = memo(function SolentBaseLayer() {
       const landLayer = L.geoJSON(
         features.filter(
           (f) =>
-            f.properties.natural === "land" ||
+            f.properties.natural === "coastline" ||
             (f.properties.natural === "water" &&
               f.geometry.type === "Polygon" &&
               f.geometry.coordinates.length > 1)

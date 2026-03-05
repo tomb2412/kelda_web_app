@@ -2,7 +2,8 @@
 
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useAuth } from '@clerk/clerk-react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
@@ -11,7 +12,7 @@ import { apiUrl } from '../config/api';
 
 function LoadingDots({
   className = '',
-  color = '#1f2937',
+  color = '#64748b',
   fontFamily,
 }: { className?: string; color?: string; fontFamily?: string }) {
   const style = {
@@ -19,14 +20,12 @@ function LoadingDots({
     ...(fontFamily ? { '--loader-dot-font': fontFamily } : {}),
   } as CSSProperties;
   return (
-    <>
-      <span className={`vercel-loading-dots ${className}`} style={style} role="status" aria-live="polite">
-        <span className="sr-only">AI is generating</span>
-        <span className="dot" aria-hidden="true" style={{ animationDelay: '0s' }} />
-        <span className="dot" aria-hidden="true" style={{ animationDelay: '0.2s' }} />
-        <span className="dot" aria-hidden="true" style={{ animationDelay: '0.4s' }} />
-      </span>
-    </>
+    <span className={`vercel-loading-dots ${className}`} style={style} role="status" aria-live="polite">
+      <span className="sr-only">AI is generating</span>
+      <span className="dot" aria-hidden="true" style={{ animationDelay: '0s' }} />
+      <span className="dot" aria-hidden="true" style={{ animationDelay: '0.2s' }} />
+      <span className="dot" aria-hidden="true" style={{ animationDelay: '0.4s' }} />
+    </span>
   );
 }
 
@@ -50,7 +49,7 @@ const CloseChatIcon = ({ className = '' }: { className?: string }) => (
     fill="currentColor"
     aria-hidden="true"
   >
-    <path d="m402-654 118 117v-89h80v226H374v-80h90L346-598l56-56Zm358 494q-50 0-85-35t-35-85q0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35Zm-600 0q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v240h-80v-240H160v480h400v80H160Z" />
+    <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z" />
   </svg>
 );
 
@@ -62,38 +61,67 @@ const OpenChatIcon = ({ className = '' }: { className?: string }) => (
     fill="currentColor"
     aria-hidden="true"
   >
-    <path d="m357-384 123-123 123 123 57-56-180-180-180 180 57 56ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z" />
+    <path d="M240-400h320v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Zm126-240h594v-480H160v525l46-45Zm-46 0v-480 480Z" />
+  </svg>
+);
+
+const SendIcon = ({ className = '' }: { className?: string }) => (
+  <svg
+    className={className}
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 -960 960 960"
+    fill="currentColor"
+    aria-hidden="true"
+  >
+    <path d="M120-160v-240l320-80-320-80v-240l760 320-760 320Z" />
   </svg>
 );
 
 export default function FloatingChat() {
+  const { getToken } = useAuth();
+
+  // Stable fetch wrapper that adds a Clerk Bearer token on every request.
+  // Using a ref so the function identity never changes (safe for DefaultChatTransport).
+  const getTokenRef = useRef(getToken);
+  useEffect(() => { getTokenRef.current = getToken; }, [getToken]);
+
+  const authFetch = useCallback(async (url: RequestInfo | URL, init?: RequestInit) => {
+    const token = await getTokenRef.current();
+    const headers = new Headers(init?.headers);
+    if (token) headers.set('Authorization', `Bearer ${token}`);
+    return fetch(url, { ...init, headers });
+  }, []);
+
   const [progressUpdate, setProgressUpdate] = useState('');
   const { messages, sendMessage, status, setMessages } = useChat({
-        transport: new DefaultChatTransport({
-            api: apiUrl('/chat_stream'),
-        }), 
-        onError: (error) => {
-        if (import.meta.env.DEV) console.error('Chat error:', error);
-        },
-        onFinish: () => {
-        setProgressUpdate('');
-        },
-        onData: (dataPart) => {
-        if (dataPart.type === "data-progress") {
-          const data = dataPart.data.node;
-          const update = data.replace("progress_update:", "");
-          setProgressUpdate(update.trim() || 'Loading...');
-          }
-        }
+    transport: new DefaultChatTransport({
+      api: apiUrl('/chat_stream'),
+      fetch: authFetch,
+    }),
+    onError: (error) => {
+      if (import.meta.env.DEV) console.error('Chat error:', error);
+    },
+    onFinish: () => {
+      setProgressUpdate('');
+    },
+    onData: (dataPart) => {
+      if (dataPart.type === "data-progress") {
+        const data = dataPart.data.node;
+        const update = data.replace("progress_update:", "");
+        setProgressUpdate(update.trim() || 'Loading...');
+      }
+    }
   });
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [isClearing, setIsClearing] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+
   const hasRenderableText = (message: { parts: Array<{ type: string; text?: string }> }) =>
     message.parts.some(
       part => part.type === 'text' && typeof part.text === 'string' && part.text.trim().length > 0,
     );
+
   const isAwaitingResponse = status === 'submitted' || status === 'streaming';
   const lastMessage = messages[messages.length - 1];
   const shouldShowLoader = isAwaitingResponse && !(lastMessage?.role === 'assistant' && hasRenderableText(lastMessage));
@@ -108,154 +136,199 @@ export default function FloatingChat() {
   }, [messages, shouldShowLoader, open]);
 
   const handleClearChat = async () => {
-    if (isClearing) {
-        return;
-    }
-
+    if (isClearing) return;
     try {
-        setIsClearing(true);
-        await fetch(apiUrl('/chat_clear'), {
-            method: 'GET',
-            headers: {
-                accept: 'application/json',
-            },
-        });
-        setMessages([]);
+      setIsClearing(true);
+      const token = await getToken();
+      await fetch(apiUrl('/chat_clear'), {
+        method: 'GET',
+        headers: {
+          accept: 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      setMessages([]);
     } catch (err) {
-        if (import.meta.env.DEV) console.error('Failed to clear chat history', err);
+      if (import.meta.env.DEV) console.error('Failed to clear chat history', err);
     } finally {
-        setIsClearing(false);
+      setIsClearing(false);
     }
-  }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (input.trim()) {
+      setProgressUpdate('Loading...');
+      sendMessage({ text: input });
+      setInput('');
+    }
+  };
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-4 sm:gap-5">
+    <div className="fixed bottom-5 right-5 z-[9999] flex flex-col items-end gap-3">
+      {/* Toggle button */}
       <button
         onClick={() => setOpen(!open)}
-        className="mb-2 bg-yellow-400 text-black rounded-full shadow w-16 h-16 flex items-center justify-center border border-black/20 transition hover:scale-105 hover:bg-yellow-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-yellow-500"
+        className="w-14 h-14 rounded-full bg-yellow-400 text-slate-900 shadow-lg flex items-center justify-center border-2 border-yellow-500/40 transition-all duration-200 hover:scale-110 hover:bg-yellow-300 hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 focus-visible:ring-offset-2"
         aria-label={open ? 'Close chat panel' : 'Open chat panel'}
       >
         <span className="sr-only">{open ? 'Close chat panel' : 'Open chat panel'}</span>
-        {open ? <CloseChatIcon className="w-9 h-9" /> : <OpenChatIcon className="w-9 h-9" />}
-    </button>
-        {open && (
-            <div className='fixed inset-x-3 bottom-24 sm:bottom-28 sm:right-12 sm:left-auto sm:inset-x-auto w-full sm:w-[26rem] max-w-[calc(100vw-1.5rem)] sm:max-w-none h-[70vh] sm:h-[75vh] min-h-[320px] flex flex-col bg-[#E8EDF3] border border-yellow-400 border-3 dark:bg-slate-800 shadow-m rounded-md'>
-                <div className='flex flex-row items-center justify-between w-full bg-yellow-400 py-1 pl-5 font-semibold text-2xl flex-shrink-0'>
-                    <div className='flex items-center gap-3'>
-                        <span>Control Panel</span>
-                    </div>
-                    <div className='flex items-center gap-2 pr-3'>
-                        <button
-                            type='button'
-                            onClick={handleClearChat}
-                            disabled={isClearing || status !== 'ready'}
-                            aria-label='Clear chat history'
-                            aria-busy={isClearing}
-                            className='relative flex items-center justify-center w-12 h-12 rounded-full bg-black text-yellow-400 border border-black/40 shadow transition hover:scale-105 hover:bg-black/80 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black'
-                        >
-                            <span className="sr-only">{isClearing ? 'Clearing chat' : 'Clear chat'}</span>
-                            <NewChatIcon className={`w-6 h-6 transition-opacity ${isClearing ? 'opacity-0' : 'opacity-100'}`} />
-                            {isClearing && (
-                                <span className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
-                                    <span className="w-4 h-4 border-2 border-yellow-300 border-t-transparent rounded-full animate-spin" />
-                                </span>
-                            )}
-                        </button>
-                        <button
-                            onClick={() => setOpen(false)}
-                            className='flex items-center justify-center w-12 h-12 text-yellow-400 rounded-full bg-black border-2 border-black/60 transition hover:scale-105 hover:bg-black/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black'
-                            aria-label='Close chat panel'
-                        >
-                            <CloseChatIcon className='w-6 h-6' />
-                        </button>
-                    </div>
-                </div>
-                <div className='px-2 pb-2 min-h-0 flex flex-col flex-1'>
-                        <div
-                        ref={scrollContainerRef}
-                        className="flex flex-col flex-1 overflow-y-auto w-full py-2"
-                    >
-                        {renderableMessages.map((message, index) => {
-                            const isUser = message.role === 'user';
-                            return (
-                            <div key={message.id} className="flex flex-col w-full">
-                                {index > 0}
-                                <div
-                                className={`whitespace-pre-wrap break-words hyphens-auto leading-relaxed max-w-[85%] px-3 py-2 ${
-                                    isUser
-                                    ? 'rounded-2xl bg-white dark:bg-zinc-900 self-end ml-auto'
-                                    : 'self-start mr-auto text-gray-900 dark:text-gray-100'
-                                }`}
-                                >
-                                {message.parts.map((part, i) => {
-                                    switch (part.type) {
-                                    case 'text':
-                                        return (
-                                        <div key={`${message.id}-${i}`} className="prose prose-sm dark:prose-invert max-w-none">
-                                            <ReactMarkdown
-                                            remarkPlugins={[remarkGfm]}
-                                            rehypePlugins={[rehypeHighlight]}
-                                            components={{
-                                                // Customize components for your chat bubble style
-                                                h1: ({children}) => <h1 className="text-lg font-bold mb-2 text-gray-900 dark:text-gray-100">{children}</h1>,
-                                                h2: ({children}) => <h2 className="text-base font-semibold mb-2 text-gray-900 dark:text-gray-100">{children}</h2>,
-                                                h3: ({children}) => <h3 className="text-sm font-semibold mb-1 text-gray-900 dark:text-gray-100">{children}</h3>,
-                                                p: ({children}) => <p className="mb-2 last:mb-0 text-gray-800 dark:text-gray-200">{children}</p>,
-                                                ul: ({children}) => <ul className="list-disc list-inside mb-2 space-y-1 text-gray-800 dark:text-gray-200">{children}</ul>,
-                                                ol: ({children}) => <ol className="list-decimal list-inside mb-2 space-y-1 text-gray-800 dark:text-gray-200">{children}</ol>,
-                                                li: ({children}) => <li className="text-sm">{children}</li>,
-                                                code: ({inline, children}) =>
-                                                inline
-                                                    ? <code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded text-xs font-mono text-red-600 dark:text-red-400">{children}</code>
-                                                    : <code className="block bg-gray-100 dark:bg-gray-800 p-2 rounded text-xs font-mono overflow-x-auto">{children}</code>,
-                                                blockquote: ({children}) => <blockquote className="border-l-4 border-gray-300 pl-3 italic text-gray-700 dark:text-gray-300 mb-2">{children}</blockquote>,
-                                                strong: ({children}) => <strong className="font-semibold text-gray-900 dark:text-gray-100">{children}</strong>,
-                                                em: ({children}) => <em className="italic text-gray-800 dark:text-gray-200">{children}</em>,
-                                            }}
-                                            >
-                                            {part.text}
-                                            </ReactMarkdown>
-                                        </div>
-                                        );
-                                    default:
-                                        return null;
-                                    }
-                                })}
-                                </div>
-                            </div>
-                        )})}
-                        {shouldShowLoader && (
-                            <div className="flex flex-col w-full">
-                                {renderableMessages.length > 0 && <hr className="border-t border-gray-300/60 my-2" />}
-                                <div className="max-w-[60%] px-3 py-2 self-start flex items-center gap-3 text-sm text-gray-800 dark:text-gray-100">
-                                    <span>{progressUpdate}  <LoadingDots color="#1f2937" /></span>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                    <form 
-                    className='mt-auto pt-2'
-                    onSubmit={e => {
-                        e.preventDefault();
-                        if (input.trim()) {
-                            setProgressUpdate('Loading...');
-                            sendMessage({ text: input});
-                            setInput('');
-                        }
-                    }
-                    }>
-                        <input
-                            className="w-full flex-shrink-0 dark:bg-zinc-900 bg-white p-2 mb-2 border border-yellow-400 border-1 dark:border-zinc-800 rounded-full shadow-xl text-gray-700 dark:text-gray-200"
-                            value={input}
-                            placeholder="Make a passage plan..."
-                            onChange={e => setInput(e.target.value)}
-                            disabled={status !== 'ready'}
-                        />
-                    </form>
-                </div>
-            </div>
-            )
+        {open
+          ? <CloseChatIcon className="w-6 h-6" />
+          : <OpenChatIcon className="w-7 h-7" />
         }
+      </button>
+
+      {/* Chat panel */}
+      {open && (
+        <div
+          className="fixed inset-x-3 bottom-[5.5rem] sm:right-5 sm:left-auto sm:inset-x-auto w-full sm:w-[28rem] max-w-[calc(100vw-1.5rem)] sm:max-w-none h-[72vh] sm:h-[76vh] min-h-[340px] flex flex-col rounded-2xl overflow-hidden shadow-2xl border border-white/20 dark:border-slate-700/60"
+          style={{ backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', background: 'rgba(203, 213, 225, 0.95)' }}
+        >
+          {/* Dark mode override via class */}
+          <div className="flex flex-col h-full dark:bg-slate-800/90">
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 bg-yellow-400 flex-shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-black/10 flex items-center justify-center flex-shrink-0">
+                  <OpenChatIcon className="w-4 h-4 text-slate-900" />
+                </div>
+                <div>
+                  <p className="text-slate-900 font-semibold text-sm leading-none">Control Panel</p>
+                  <p className="text-slate-700 text-xs mt-0.5">
+                    {isAwaitingResponse ? 'Thinking...' : 'Ready'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleClearChat}
+                  disabled={isClearing || status !== 'ready'}
+                  aria-label="Clear chat history"
+                  aria-busy={isClearing}
+                  className="relative w-9 h-9 rounded-full bg-black/10 text-slate-900 border border-black/10 flex items-center justify-center transition hover:bg-black/20 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-black/30"
+                >
+                  <span className="sr-only">{isClearing ? 'Clearing chat' : 'Clear chat'}</span>
+                  <NewChatIcon className={`w-4 h-4 transition-opacity ${isClearing ? 'opacity-0' : 'opacity-100'}`} />
+                  {isClearing && (
+                    <span className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
+                      <span className="w-3.5 h-3.5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => setOpen(false)}
+                  className="w-9 h-9 rounded-full bg-black/10 text-slate-900 border border-black/10 flex items-center justify-center transition hover:bg-black/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/30"
+                  aria-label="Close chat panel"
+                >
+                  <CloseChatIcon className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Messages */}
+            <div
+              ref={scrollContainerRef}
+              className="flex flex-col flex-1 overflow-y-auto px-4 py-3 gap-3 min-h-0"
+            >
+              {renderableMessages.length === 0 && !shouldShowLoader && (
+                <div className="flex-1 flex flex-col items-center justify-center text-center gap-3 py-8">
+                  <div className="w-12 h-12 rounded-full bg-[#024887]/10 dark:bg-slate-700 flex items-center justify-center">
+                    <OpenChatIcon className="w-6 h-6 text-[#024887] dark:text-blue-300" />
+                  </div>
+                  <div>
+                    <p className="text-slate-700 dark:text-slate-300 font-medium text-sm">How can I help?</p>
+                    <p className="text-slate-400 dark:text-slate-500 text-xs mt-1">Ask me about passage plans, tides, or vessel status.</p>
+                  </div>
+                </div>
+              )}
+
+              {renderableMessages.map((message) => {
+                const isUser = message.role === 'user';
+                return (
+                  <div
+                    key={message.id}
+                    className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[82%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                        isUser
+                          ? 'bg-[#024887] text-white rounded-br-sm shadow-sm'
+                          : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-bl-sm shadow-sm border border-slate-100 dark:border-slate-700'
+                      }`}
+                    >
+                      {message.parts.map((part, i) => {
+                        if (part.type !== 'text') return null;
+                        return isUser ? (
+                          <span key={`${message.id}-${i}`}>{part.text}</span>
+                        ) : (
+                          <div key={`${message.id}-${i}`} className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:mb-1">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              rehypePlugins={[rehypeHighlight]}
+                              components={{
+                                h1: ({ children }) => <h1 className="text-base font-bold mb-1 text-slate-900 dark:text-slate-100">{children}</h1>,
+                                h2: ({ children }) => <h2 className="text-sm font-semibold mb-1 text-slate-900 dark:text-slate-100">{children}</h2>,
+                                h3: ({ children }) => <h3 className="text-sm font-medium mb-0.5 text-slate-900 dark:text-slate-100">{children}</h3>,
+                                p: ({ children }) => <p className="mb-1.5 last:mb-0 text-slate-700 dark:text-slate-200">{children}</p>,
+                                ul: ({ children }) => <ul className="list-disc list-inside mb-1.5 space-y-0.5 text-slate-700 dark:text-slate-200">{children}</ul>,
+                                ol: ({ children }) => <ol className="list-decimal list-inside mb-1.5 space-y-0.5 text-slate-700 dark:text-slate-200">{children}</ol>,
+                                li: ({ children }) => <li className="text-sm">{children}</li>,
+                                code: ({ inline, children }: { inline?: boolean; children?: React.ReactNode }) =>
+                                  inline
+                                    ? <code className="bg-slate-100 dark:bg-slate-700 px-1 py-0.5 rounded text-xs font-mono text-[#024887] dark:text-blue-300">{children}</code>
+                                    : <code className="block bg-slate-100 dark:bg-slate-900 p-2 rounded-lg text-xs font-mono overflow-x-auto">{children}</code>,
+                                blockquote: ({ children }) => <blockquote className="border-l-3 border-[#024887]/30 pl-3 italic text-slate-600 dark:text-slate-400 mb-1.5">{children}</blockquote>,
+                                strong: ({ children }) => <strong className="font-semibold text-slate-900 dark:text-slate-100">{children}</strong>,
+                                em: ({ children }) => <em className="italic text-slate-700 dark:text-slate-300">{children}</em>,
+                              }}
+                            >
+                              {part.text}
+                            </ReactMarkdown>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {shouldShowLoader && (
+                <div className="flex justify-start">
+                  <div className="max-w-[82%] px-3.5 py-2.5 rounded-2xl rounded-bl-sm bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                    <LoadingDots color="#64748b" />
+                    {progressUpdate && <span className="text-xs">{progressUpdate}</span>}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Input */}
+            <div className="px-3 pb-3 pt-2 flex-shrink-0 border-t border-slate-200/60 dark:border-slate-700/60 bg-white/50 dark:bg-slate-900/50">
+              <form onSubmit={handleSubmit} className="flex items-center gap-2">
+                <input
+                  className="flex-1 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm px-4 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#024887]/30 focus:border-[#024887]/40 dark:focus:ring-blue-500/30 transition"
+                  value={input}
+                  placeholder="Ask about passage, tides..."
+                  onChange={e => setInput(e.target.value)}
+                  disabled={status !== 'ready'}
+                />
+                <button
+                  type="submit"
+                  disabled={status !== 'ready' || !input.trim()}
+                  className="w-10 h-10 rounded-full bg-[#024887] text-white flex items-center justify-center shadow-sm transition hover:bg-[#024887]/80 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-[#024887]/50 flex-shrink-0"
+                  aria-label="Send message"
+                >
+                  <SendIcon className="w-4 h-4" />
+                </button>
+              </form>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }

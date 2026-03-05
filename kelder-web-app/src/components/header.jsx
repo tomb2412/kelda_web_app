@@ -84,15 +84,6 @@ const Header = () => {
                 </div>
             </div>
             <div className="flex items-center gap-3 text-slate-900 dark:text-white">
-                {hasConnectivityError && (
-                    <div
-                        title="One or more sensors are unreachable"
-                        className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-400/90 text-slate-900 shadow-sm"
-                        aria-label="Connectivity warning: one or more sensors are unreachable"
-                    >
-                        <img src={syncDisabledIcon} alt="" className="h-6 w-6" />
-                    </div>
-                )}
                 <button
                     type="button"
                     onClick={toggleTheme}
