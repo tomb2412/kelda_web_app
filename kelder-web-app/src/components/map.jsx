@@ -5,6 +5,24 @@ import "leaflet/dist/leaflet.css"
 import solentDataUrl from "../assets/marks,water,land.geojson?url"
 import { useSensorData } from "../context/SensorDataContext"
 
+// ─── Mark asset imports ───────────────────────────────────────────────────────
+import cardinalNorthUrl   from "../assets/Cardinal_Pillar_North.svg?url"
+import cardinalSouthUrl   from "../assets/Cardinal_Pillar_South.svg?url"
+import cardinalEastUrl    from "../assets/Cardinal_Pillar_East.svg?url"
+import cardinalWestUrl    from "../assets/Cardinal_Pillar_West.svg?url"
+import cardinalSingleUrl  from "../assets/Cardinal_Pillar_Single.svg?url"
+import lateralPortUrl     from "../assets/Lateral_Conical_Red.png?url"
+import lateralStbdUrl     from "../assets/Lateral_Conical_Green.png?url"
+import lateralPrefPortUrl from "../assets/Lateral_Pillar_PreferredChannel_Port.svg?url"
+import lateralPrefStbdUrl from "../assets/Lateral_Pillar_PreferredChannel_Starboard.svg?url"
+import specialPurposeUrl  from "../assets/SpecialPP_Conical.svg?url"
+import lightHouseUrl      from "../assets/Light_House.svg?url"
+import harbourUrl         from "../assets/Harbour.svg?url"
+import visitorBerthUrl    from "../assets/Visitor_Berth.svg?url"
+import anchorUrl          from "../assets/anchor.svg?url"
+import rockUrl            from "../assets/Rock.svg?url"
+import safeWaterUrl       from "../assets/Safe_Water_Pillar.svg?url"
+
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -52,42 +70,152 @@ const computeAnimationDuration = (start, target) => {
   return Math.min(MARKER_ANIMATION_MAX_MS, Math.max(MARKER_ANIMATION_MIN_MS, dist * 40000))
 }
 
-// ─── Seamark canvas style ─────────────────────────────────────────────────────
-// Returns circleMarker options for a given seamark feature.
-// All marks share one L.canvas() renderer → a single <canvas> element.
+// ─── Seamark image icons ──────────────────────────────────────────────────────
+// Icons are drawn on a single <canvas> via drawImage() at ICON_SIZE px.
+// drawImage() ignores the SVG's intrinsic dimensions — only ICON_SIZE matters.
+// Only ~16 HTMLImageElement objects are ever created (one per distinct icon),
+// regardless of how many marks are on the chart.
 
-const getSeamarkStyle = (properties) => {
-  const type      = properties["seamark:type"]
-  const catLateral = properties["seamark:buoy_lateral:category"] || properties["seamark:beacon_lateral:category"]
-  const catCard    = properties["seamark:buoy_cardinal:category"] || properties["seamark:beacon_cardinal:category"]
+const ICON_SIZE = 60 // px on screen
 
-  // Cardinals — yellow/black per IALA convention
-  if (type === "buoy_cardinal" || type === "beacon_cardinal") {
-    const fill = (catCard === "north" || catCard === "south") ? "#000000" : "#f5c400"
-    return { fillColor: fill, color: "#000", radius: 5, fillOpacity: 1, weight: 1 }
-  }
-  // Laterals
-  if (type === "buoy_lateral" || type === "beacon_lateral") {
-    if (catLateral === "starboard")                  return { fillColor: "#0d6e32", color: "#fff", radius: 4, fillOpacity: 1, weight: 0.8 }
-    if (catLateral === "preferred_channel_port")     return { fillColor: "#a82a1e", color: "#0d6e32", radius: 4, fillOpacity: 1, weight: 1.5 }
-    if (catLateral === "preferred_channel_starboard") return { fillColor: "#0d6e32", color: "#a82a1e", radius: 4, fillOpacity: 1, weight: 1.5 }
-    return { fillColor: "#a82a1e", color: "#fff", radius: 4, fillOpacity: 1, weight: 0.8 } // port
-  }
-  // Special purpose — yellow X buoys
-  if (type === "buoy_special_purpose" || type === "beacon_special_purpose")
-    return { fillColor: "#f5c400", color: "#8a6d00", radius: 4, fillOpacity: 1, weight: 0.8 }
-  // Lights
-  if (type === "light_major") return { fillColor: "#ffffff", color: "#f1fa8c", radius: 5, fillOpacity: 1, weight: 1.5 }
-  if (type === "light_minor") return { fillColor: "#ffffff", color: "#f1fa8c", radius: 3, fillOpacity: 1, weight: 1 }
-  // Harbours / berths
-  if (type === "harbour" || type === "berth") return { fillColor: "#4da6ff", color: "#003f88", radius: 4, fillOpacity: 1, weight: 0.8 }
-  // Anchorage — hollow circle
-  if (type === "anchorage") return { fillColor: "transparent", color: "#c8b96e", radius: 5, fillOpacity: 0, weight: 1.5 }
-  // Landmarks
-  if (type === "landmark") return { fillColor: "#b5651d", color: "#000", radius: 4, fillOpacity: 1, weight: 0.8 }
-  // Default
-  return { fillColor: "#ffcc00", color: "#000", radius: 3, fillOpacity: 1, weight: 0.8 }
+const ICON_URLS = {
+  cardinal_north:    cardinalNorthUrl,
+  cardinal_south:    cardinalSouthUrl,
+  cardinal_east:     cardinalEastUrl,
+  cardinal_west:     cardinalWestUrl,
+  cardinal_single:   cardinalSingleUrl,
+  lateral_port:      lateralPortUrl,
+  lateral_stbd:      lateralStbdUrl,
+  lateral_pref_port: lateralPrefPortUrl,
+  lateral_pref_stbd: lateralPrefStbdUrl,
+  special_purpose:   specialPurposeUrl,
+  light:             lightHouseUrl,
+  harbour:           harbourUrl,
+  berth:             visitorBerthUrl,
+  anchorage:         anchorUrl,
+  landmark:          rockUrl,
+  gate:              safeWaterUrl,
 }
+
+const getIconKey = (p) => {
+  const type      = p["seamark:type"]
+  const catLateral = p["seamark:buoy_lateral:category"]  || p["seamark:beacon_lateral:category"]
+  const catCard    = p["seamark:buoy_cardinal:category"] || p["seamark:beacon_cardinal:category"]
+  if (type === "buoy_cardinal"       || type === "beacon_cardinal")
+    return `cardinal_${catCard ?? "single"}`
+  if (type === "buoy_lateral"        || type === "beacon_lateral") {
+    if (catLateral === "preferred_channel_port")      return "lateral_pref_port"
+    if (catLateral === "preferred_channel_starboard") return "lateral_pref_stbd"
+    return catLateral === "starboard" ? "lateral_stbd" : "lateral_port"
+  }
+  if (type === "buoy_special_purpose" || type === "beacon_special_purpose") return "special_purpose"
+  if (type === "light_major" || type === "light_minor") return "light"
+  if (type === "harbour")   return "harbour"
+  if (type === "berth")     return "berth"
+  if (type === "anchorage") return "anchorage"
+  if (type === "landmark")  return "landmark"
+  if (type === "gate")      return "gate"
+  return null
+}
+
+// Module-level promise — images load once and are reused across mounts
+let iconImagesPromise = null
+const loadIconImages = () => {
+  if (iconImagesPromise) return iconImagesPromise
+  iconImagesPromise = Promise.all(
+    Object.entries(ICON_URLS).map(([key, url]) =>
+      new Promise(resolve => {
+        const img = new Image()
+        img.onload  = () => resolve([key, img])
+        img.onerror = () => resolve([key, null])
+        img.src = url
+      })
+    )
+  ).then(Object.fromEntries)
+  return iconImagesPromise
+}
+
+// Custom Leaflet layer: one <canvas>, all marks drawn via drawImage()
+const SeamarkCanvasLayer = L.Layer.extend({
+  initialize: function(features, images, onClickRef) {
+    this._features  = features
+    this._images    = images
+    this._clickRef  = onClickRef
+    this._positions = []  // container-coord positions for hit testing
+    this._rafId     = null
+  },
+
+  onAdd: function(map) {
+    this._map = map
+    const canvas = document.createElement("canvas")
+    canvas.style.cssText = "position:absolute;left:0;top:0;pointer-events:none"
+    this._canvas = canvas
+    map.getPanes().overlayPane.appendChild(canvas)
+
+    this._drawBound  = this._draw.bind(this)
+    this._moveBound  = this._scheduleDraw.bind(this)
+    this._clickBound = this._onClick.bind(this)
+
+    map.on("viewreset zoomend moveend", this._drawBound)
+    map.on("move", this._moveBound)
+    map.on("click", this._clickBound)
+    this._draw()
+  },
+
+  onRemove: function(map) {
+    map.off("viewreset zoomend moveend", this._drawBound)
+    map.off("move", this._moveBound)
+    map.off("click", this._clickBound)
+    if (this._rafId) cancelAnimationFrame(this._rafId)
+    this._canvas.remove()
+  },
+
+  _scheduleDraw: function() {
+    if (this._rafId) return
+    this._rafId = requestAnimationFrame(() => { this._rafId = null; this._draw() })
+  },
+
+  _draw: function() {
+    const map    = this._map
+    const size   = map.getSize()
+    const topLeft = map.containerPointToLayerPoint([0, 0])
+
+    L.DomUtil.setPosition(this._canvas, topLeft)
+    this._canvas.width  = size.x
+    this._canvas.height = size.y
+
+    const ctx = this._canvas.getContext("2d")
+    const S   = ICON_SIZE
+    this._positions = []
+
+    for (const f of this._features) {
+      const [lon, lat] = f.geometry.coordinates
+      const cPt = map.latLngToContainerPoint([lat, lon])        // for hit-test
+      const lPt = map.latLngToLayerPoint([lat, lon])             // for canvas draw
+      const x   = lPt.x - topLeft.x
+      const y   = lPt.y - topLeft.y
+
+      const img = this._images[getIconKey(f.properties)]
+      if (img) ctx.drawImage(img, x - S / 2, y - S, S, S)
+
+      this._positions.push({ cx: cPt.x, cy: cPt.y, feature: f })
+    }
+  },
+
+  _onClick: function(e) {
+    const { x, y } = e.containerPoint
+    const S = ICON_SIZE
+    for (const { cx, cy, feature } of this._positions) {
+      if (Math.abs(x - cx) <= S && Math.abs(y - cy) <= S) {
+        this._clickRef.current?.({
+          properties: feature.properties,
+          latlng: [feature.geometry.coordinates[1], feature.geometry.coordinates[0]],
+        })
+        return
+      }
+    }
+  },
+})
 
 // ─── Info panel helpers ───────────────────────────────────────────────────────
 
@@ -196,115 +324,57 @@ const SolentBaseLayer = memo(function SolentBaseLayer({ onMarkClickRef }) {
     let cancelled = false
     const addedLayers = []
 
-    const buildLayers = (data) => {
+    const run = async () => {
+      // Load geojson + all icon images in parallel; images are cached after first load
+      const [data, images] = await Promise.all([
+        geojsonCache
+          ? Promise.resolve(geojsonCache)
+          : fetch(solentDataUrl).then(r => r.json()).then(d => { geojsonCache = d; return d }),
+        loadIconImages(),
+      ])
+
       if (cancelled) return
 
-      // Canvas renderer for non-interactive base layers
       const renderer = L.canvas({ padding: 0.2 })
       const features = data.features
 
-      // --- Land polygons (and island rings inside water bodies) ---
-      const landLayer = L.geoJSON(
-        features.filter(
-          (f) =>
-            f.properties.natural === "coastline" ||
-            (f.properties.natural === "water" &&
-              f.geometry.type === "Polygon" &&
-              f.geometry.coordinates.length > 1)
+      // --- Land polygons ---
+      addedLayers.push(L.geoJSON(
+        features.filter(f =>
+          f.properties.natural === "coastline" ||
+          (f.properties.natural === "water" && f.geometry.type === "Polygon" && f.geometry.coordinates.length > 1)
         ),
-        {
-          renderer,
-          interactive: false,
-          style: () => ({
-            fillColor: MAP_COLORS.mapBackground,
-            fillOpacity: 1,
-            color: MAP_COLORS.landStroke,
-            weight: 0.4,
-          }),
-        }
-      ).addTo(map)
-      addedLayers.push(landLayer)
+        { renderer, interactive: false, style: () => ({ fillColor: MAP_COLORS.mapBackground, fillOpacity: 1, color: MAP_COLORS.landStroke, weight: 0.4 }) }
+      ).addTo(map))
 
-      // --- Water polygons (sea, bays, straits) ---
-      // Straits (e.g. The Solent) are always included regardless of ring count —
-      // their inner rings (islands) will be rendered on top by the land layer.
-      const waterLayer = L.geoJSON(
-        features.filter((f) => {
+      // --- Water / Solent (straits always included regardless of ring count) ---
+      addedLayers.push(L.geoJSON(
+        features.filter(f => {
           const p = f.properties
           if (p.natural === "strait") return true
-          return (
-            (p.natural === "water" || p.natural === "bay" || p.place === "sea") &&
+          return (p.natural === "water" || p.natural === "bay" || p.place === "sea") &&
             !(f.geometry.type === "Polygon" && f.geometry.coordinates.length > 1)
-          )
         }),
-        {
-          renderer,
-          interactive: false,
-          style: () => ({
-            fillColor: MAP_COLORS.solentFill,
-            fillOpacity: 1,
-            color: MAP_COLORS.solentStroke,
-            weight: 0.4,
-          }),
-        }
-      ).addTo(map)
-      addedLayers.push(waterLayer)
+        { renderer, interactive: false, style: () => ({ fillColor: MAP_COLORS.solentFill, fillOpacity: 1, color: MAP_COLORS.solentStroke, weight: 0.4 }) }
+      ).addTo(map))
 
       // --- Coastlines + depth contours ---
-      const coastLayer = L.geoJSON(
-        features.filter(
-          (f) =>
-            f.properties.natural === "coastline" ||
-            f.properties["seamark:type"] === "depth_contour"
-        ),
-        {
-          renderer,
-          interactive: false,
-          style: (f) => {
-            const isDepth = f.properties["seamark:type"] === "depth_contour"
-            return {
-              fill: false,
-              color: isDepth ? MAP_COLORS.depthContour : MAP_COLORS.coastline,
-              weight: isDepth ? 1 : 2,
-            }
-          },
-        }
-      ).addTo(map)
-      addedLayers.push(coastLayer)
+      addedLayers.push(L.geoJSON(
+        features.filter(f => f.properties.natural === "coastline" || f.properties["seamark:type"] === "depth_contour"),
+        { renderer, interactive: false, style: f => {
+          const isDepth = f.properties["seamark:type"] === "depth_contour"
+          return { fill: false, color: isDepth ? MAP_COLORS.depthContour : MAP_COLORS.coastline, weight: isDepth ? 1 : 2 }
+        }}
+      ).addTo(map))
 
-      // --- Seamarks: all on the shared canvas renderer, click → info panel ---
-      const seamarkLayer = L.geoJSON(
-        features.filter(
-          (f) =>
-            f.geometry?.type === "Point" &&
-            POINT_SEAMARK_TYPES.has(f.properties["seamark:type"])
-        ),
-        {
-          pointToLayer: (feature, latlng) =>
-            L.circleMarker(latlng, { renderer, ...getSeamarkStyle(feature.properties) }),
-          onEachFeature: (feature, layer) => {
-            layer.on("click", () => {
-              onMarkClickRef.current?.({
-                properties: feature.properties,
-                latlng: [feature.geometry.coordinates[1], feature.geometry.coordinates[0]],
-              })
-            })
-          },
-        }
-      ).addTo(map)
-      addedLayers.push(seamarkLayer)
+      // --- Seamarks: single canvas layer, images drawn via drawImage() ---
+      const seamarkFeatures = features.filter(f =>
+        f.geometry?.type === "Point" && POINT_SEAMARK_TYPES.has(f.properties["seamark:type"])
+      )
+      addedLayers.push(new SeamarkCanvasLayer(seamarkFeatures, images, onMarkClickRef).addTo(map))
     }
 
-    if (geojsonCache) {
-      buildLayers(geojsonCache)
-    } else {
-      fetch(solentDataUrl)
-        .then((r) => r.json())
-        .then((data) => {
-          geojsonCache = data
-          buildLayers(data)
-        })
-    }
+    run()
 
     return () => {
       cancelled = true
