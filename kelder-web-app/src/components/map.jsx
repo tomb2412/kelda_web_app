@@ -1,4 +1,4 @@
-import { useEffect, useRef, memo, useState } from "react"
+import { useEffect, useRef, memo, useState, useMemo } from "react"
 import { MapContainer, useMap } from "react-leaflet"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
@@ -34,6 +34,7 @@ const MAP_COLORS = {
   coastline:      "rgb(26, 112, 0)",
   depthContour:   "rgba(136, 183, 208, 1)",
   fallbackMark:   "rgba(255, 204, 0, 1)",
+  planLineColour: "rgb(238, 0, 255)"
 }
 
 const MAP_CENTER = [50.8, -1.30]  // Leaflet uses [lat, lon]
@@ -148,9 +149,10 @@ const SeamarkCanvasLayer = L.Layer.extend({
   onAdd: function(map) {
     this._map = map
     const canvas = document.createElement("canvas")
-    canvas.style.cssText = "position:absolute;left:0;top:0;pointer-events:none"
+    // Place in map container (not overlay pane) so canvas pixel coords == container coords
+    canvas.style.cssText = "position:absolute;left:0;top:0;pointer-events:none;z-index:450"
     this._canvas = canvas
-    map.getPanes().overlayPane.appendChild(canvas)
+    map.getContainer().appendChild(canvas)
 
     this._drawBound  = this._draw.bind(this)
     this._moveBound  = this._scheduleDraw.bind(this)
@@ -176,11 +178,10 @@ const SeamarkCanvasLayer = L.Layer.extend({
   },
 
   _draw: function() {
-    const map    = this._map
-    const size   = map.getSize()
-    const topLeft = map.containerPointToLayerPoint([0, 0])
+    const map  = this._map
+    const size = map.getSize()
 
-    L.DomUtil.setPosition(this._canvas, topLeft)
+    // Canvas is in the map container at 0,0 — container coords == canvas pixel coords
     this._canvas.width  = size.x
     this._canvas.height = size.y
 
@@ -190,15 +191,12 @@ const SeamarkCanvasLayer = L.Layer.extend({
 
     for (const f of this._features) {
       const [lon, lat] = f.geometry.coordinates
-      const cPt = map.latLngToContainerPoint([lat, lon])        // for hit-test
-      const lPt = map.latLngToLayerPoint([lat, lon])             // for canvas draw
-      const x   = lPt.x - topLeft.x
-      const y   = lPt.y - topLeft.y
+      const pt = map.latLngToContainerPoint([lat, lon])
 
       const img = this._images[getIconKey(f.properties)]
-      if (img) ctx.drawImage(img, x - S / 2, y - S, S, S)
+      if (img) ctx.drawImage(img, pt.x - S / 2, pt.y - S, S, S)
 
-      this._positions.push({ cx: cPt.x, cy: cPt.y, feature: f })
+      this._positions.push({ cx: pt.x, cy: pt.y, feature: f })
     }
   },
 
@@ -301,13 +299,13 @@ function MarkInfoPanel({ mark, onClose }) {
 
 const createVesselIcon = (rotation) =>
   L.divIcon({
-    html: `<svg xmlns="http://www.w3.org/2000/svg" width="5" height="5" viewBox="-10 -10 20 20">
+    html: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="-10 -10 20 20">
       <polygon points="0,-8 7,6 0,1 -7,6"
         fill="rgba(168,42,30,1)" stroke="rgba(0,0,0,1)" stroke-width="1"
         transform="rotate(${rotation})"/>
     </svg>`,
     className: "",
-    iconSize: [5, 5],
+    iconSize: [20, 20],
     iconAnchor: [10, 10],
   })
 
@@ -403,7 +401,7 @@ const VesselLayer = memo(function VesselLayer({ gpsData }) {
     trackRef.current = L.polyline([], {
       renderer,
       color: "rgba(168, 42, 30, 1)",
-      weight: 2.5,
+      weight: 3,
       lineCap: "round",
       lineJoin: "round",
       interactive: false,
@@ -490,6 +488,34 @@ const VesselLayer = memo(function VesselLayer({ gpsData }) {
   return null
 })
 
+// ─── Passage plan polyline ────────────────────────────────────────────────────
+// Draws waypoints from the shared passage plan context as a purple route line.
+// Updated imperatively via Leaflet API — no React re-renders on data change.
+const PassagePlanLayer = memo(function PassagePlanLayer({ latLngs }) {
+  const map = useMap()
+  const polylineRef = useRef(null)
+
+  useEffect(() => {
+    polylineRef.current = L.polyline([], {
+      color: MAP_COLORS.planLineColour,   // purple-500
+      weight: 4,
+      lineCap: "round",
+      lineJoin: "round",
+      interactive: false,
+    }).addTo(map)
+
+    return () => {
+      if (polylineRef.current) map.removeLayer(polylineRef.current)
+    }
+  }, [map])
+
+  useEffect(() => {
+    polylineRef.current?.setLatLngs(latLngs)
+  }, [latLngs])
+
+  return null
+})
+
 // ─── Zoom controls (rendered inside MapContainer so useMap() is available) ────
 const ZoomControls = () => {
   const map = useMap()
@@ -520,12 +546,26 @@ const ZoomControls = () => {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export const SolentChart = () => {
-  const gpsData = useSensorData("gpsPosition")
+  const gpsData        = useSensorData("gpsPosition")
+  const passagePlanData = useSensorData("passagePlan")
   const [selectedMark, setSelectedMark] = useState(null)
 
   // Ref so the memo'd base layer always calls the latest setter without re-mounting
   const onMarkClickRef = useRef(null)
   onMarkClickRef.current = setSelectedMark
+
+  // Derive signed lat/lon pairs from passage plan waypoints.
+  // passagePlan stores absolute lat/lon with hemisphere strings (N/S/E/W).
+  const passageLatLngs = useMemo(() => {
+    const waypoints = passagePlanData?.passage_plan?.course_to_steer
+    if (!Array.isArray(waypoints) || waypoints.length < 2) return []
+    return waypoints
+      .filter(wp => wp.latitude != null && wp.longitude != null)
+      .map(wp => [
+        wp.latitude_hemisphere  === "S" ? -Math.abs(wp.latitude)  : Math.abs(wp.latitude),
+        wp.longitude_hemisphere === "W" ? -Math.abs(wp.longitude) : Math.abs(wp.longitude),
+      ])
+  }, [passagePlanData])
 
   return (
     <div className="rounded-xl p-3 text-slate-800 dark:bg-slate-800/90 bg-[#024887]/10 dark:text-white mb-3">
@@ -546,6 +586,7 @@ export const SolentChart = () => {
         >
           <SolentBaseLayer onMarkClickRef={onMarkClickRef} />
           <VesselLayer gpsData={gpsData} />
+          <PassagePlanLayer latLngs={passageLatLngs} />
           <ZoomControls />
         </MapContainer>
         <MarkInfoPanel mark={selectedMark} onClose={() => setSelectedMark(null)} />
