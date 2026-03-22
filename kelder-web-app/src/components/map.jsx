@@ -194,7 +194,7 @@ const SeamarkCanvasLayer = L.Layer.extend({
       const pt = map.latLngToContainerPoint([lat, lon])
 
       const img = this._images[getIconKey(f.properties)]
-      if (img) ctx.drawImage(img, pt.x - S / 2, pt.y - S, S, S)
+      if (img) ctx.drawImage(img, pt.x - S / 2, pt.y - S / 2, S, S)
 
       this._positions.push({ cx: pt.x, cy: pt.y, feature: f })
     }
