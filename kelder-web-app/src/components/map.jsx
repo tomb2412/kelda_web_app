@@ -297,18 +297,20 @@ function MarkInfoPanel({ mark, onClose }) {
 
 // ─── SVG vessel marker ────────────────────────────────────────────────────────
 
-const createVesselIcon = (rotation) =>
-  L.divIcon({
-    html: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="-10 -10 20 20">
+const createVesselIcon = (rotation, scale = 2) => {
+  const size = 20 * scale
+  const half = size / 2
+  return L.divIcon({
+    html: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="-10 -10 20 20">
       <polygon points="0,-8 7,6 0,1 -7,6"
-        fill="rgba(168,42,30,1)" stroke="rgba(0,0,0,1)" stroke-width="1"
+        fill="rgb(230, 0, 255)" stroke="rgba(0,0,0,1)" stroke-width="${1 / scale}"
         transform="rotate(${rotation})"/>
     </svg>`,
     className: "",
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
+    iconSize: [size, size],
+    iconAnchor: [half, half],
   })
-
+}
 // ─── Module-level GeoJSON cache ───────────────────────────────────────────────
 // Parsed once; survives hot-reloads and multiple component mounts.
 let geojsonCache = null
