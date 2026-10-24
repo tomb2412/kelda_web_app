@@ -398,10 +398,12 @@ const VesselLayer = memo(function VesselLayer({ gpsData }) {
 
   // Initialise track polyline + vessel marker once
   useEffect(() => {
-    const renderer = L.canvas()
+    if (!map.getPane("trackPane")) map.createPane("trackPane").style.zIndex = 450
+    const renderer = L.canvas({ pane: "trackPane" })
 
     trackRef.current = L.polyline([], {
       renderer,
+      pane: "trackPane",
       color: "rgba(168, 42, 30, 1)",
       weight: 3,
       lineCap: "round",
