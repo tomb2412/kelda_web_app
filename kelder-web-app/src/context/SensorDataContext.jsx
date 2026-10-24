@@ -1,9 +1,10 @@
-import { createContext, useContext, useEffect, useReducer } from 'react';
+import { createContext, useCallback, useContext, useEffect, useReducer } from 'react';
 import axios from 'axios';
 import { apiUrl } from '../config/api';
 import { POLL_INTERVAL_MS, SLOW_POLL_INTERVAL_MS } from '../config/constants';
 
 const SensorDataContext = createContext(null);
+const PassagePlanRefreshContext = createContext(null);
 
 const initialState = {
     gps: null,
@@ -39,6 +40,17 @@ const FAST_ENDPOINTS = [
 export function SensorDataProvider({ children }) {
     const [data, dispatch] = useReducer(reducer, initialState);
 
+    // Stable so consumers can call it after mutating the plan without waiting for the slow poll
+    const fetchPassagePlan = useCallback(async () => {
+        try {
+            const res = await axios.get(apiUrl('/passage_plan'));
+            dispatch({ type: 'UPDATE', payload: { passagePlan: res.data } });
+            dispatch({ type: 'UPDATE_ERRORS', payload: { passagePlan: false } });
+        } catch {
+            dispatch({ type: 'UPDATE_ERRORS', payload: { passagePlan: true } });
+        }
+    }, []);
+
     useEffect(() => {
         async function fetchFast() {
             const results = await Promise.allSettled(
@@ -59,31 +71,23 @@ export function SensorDataProvider({ children }) {
             dispatch({ type: 'UPDATE_ERRORS', payload: errors });
         }
 
-        async function fetchSlow() {
-            try {
-                const res = await axios.get(apiUrl('/passage_plan'));
-                dispatch({ type: 'UPDATE', payload: { passagePlan: res.data } });
-                dispatch({ type: 'UPDATE_ERRORS', payload: { passagePlan: false } });
-            } catch {
-                dispatch({ type: 'UPDATE_ERRORS', payload: { passagePlan: true } });
-            }
-        }
-
         fetchFast();
-        fetchSlow();
+        fetchPassagePlan();
 
         const fastTimer = setInterval(fetchFast, POLL_INTERVAL_MS);
-        const slowTimer = setInterval(fetchSlow, SLOW_POLL_INTERVAL_MS);
+        const slowTimer = setInterval(fetchPassagePlan, SLOW_POLL_INTERVAL_MS);
 
         return () => {
             clearInterval(fastTimer);
             clearInterval(slowTimer);
         };
-    }, []);
+    }, [fetchPassagePlan]);
 
     return (
         <SensorDataContext.Provider value={data}>
-            {children}
+            <PassagePlanRefreshContext.Provider value={fetchPassagePlan}>
+                {children}
+            </PassagePlanRefreshContext.Provider>
         </SensorDataContext.Provider>
     );
 }
@@ -98,4 +102,10 @@ export function useSensorErrors() {
     const ctx = useContext(SensorDataContext);
     if (!ctx) throw new Error('useSensorErrors must be used within SensorDataProvider');
     return ctx.errors;
+}
+
+export function useRefreshPassagePlan() {
+    const ctx = useContext(PassagePlanRefreshContext);
+    if (!ctx) throw new Error('useRefreshPassagePlan must be used within SensorDataProvider');
+    return ctx;
 }
