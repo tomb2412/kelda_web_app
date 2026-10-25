@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useImperativeHandle, forwardRef } from 'react';
 import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 import HighchartsMore from "highcharts/highcharts-more";
@@ -69,6 +69,48 @@ const shortestAngleDelta = (from, to) => {
   return delta;
 };
 
+// Touch has no mouse-out when you tap away from the chart, so a tapped label clears itself
+const TOUCH_FOCUS_MS = 3000;
+
+// Heading/COG readouts below the pivot. Dial hover state lives here (driven through the ref)
+// so focusing a dial doesn't re-render WindRose, which would rebuild and update the chart and
+// could cancel the hover. Sits just below the pivot: the chart has zero margins, so the pane
+// centre is the container centre, and the heading needle always points up, leaving this clear.
+const CompassReadouts = forwardRef(function CompassReadouts({ heading, cog }, ref) {
+    const [focused, setFocused] = useState(null);  // 'heading' | 'cog' | null
+    const timerRef = useRef(null);
+
+    useImperativeHandle(ref, () => ({
+        focus: (key) => {
+            clearTimeout(timerRef.current);
+            setFocused(key);
+            if (key && window.matchMedia?.('(hover: none)').matches) {
+                timerRef.current = setTimeout(() => setFocused(null), TOUCH_FOCUS_MS);
+            }
+        },
+    }), []);
+
+    useEffect(() => () => clearTimeout(timerRef.current), []);
+
+    // Keep showing the last label while it fades out, rather than snapping to a default
+    const lastTagRef = useRef('HDG');
+    if (focused) lastTagRef.current = focused === 'cog' ? 'COG' : 'HDG';
+    const tag = lastTagRef.current;
+
+    const fade = (key) => `transition-opacity duration-200 ${focused && focused !== key ? 'opacity-25' : 'opacity-100'}`;
+    const tagClass = 'absolute left-1/2 -translate-x-1/2 text-xs font-semibold uppercase tracking-[0.14em] transition-opacity duration-200';
+
+    return (
+        <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 translate-y-3 text-center text-slate-900 dark:text-white">
+            <p className={`text-3xl sm:text-4xl font-bold leading-none ${fade('heading')}`}>{heading}°</p>
+            <p className={`mt-1 text-lg sm:text-xl font-bold leading-none ${fade('cog')}`}>{cog}°</p>
+            <span className={`${tagClass} top-full mt-1 sm:max-lg:mt-0.5 sm:max-lg:leading-none ${focused ? 'opacity-100' : 'opacity-0'}`}>
+                {tag}
+            </span>
+        </div>
+    );
+});
+
 const WindRose = function({}){
     const {theme} = useThemeContext();
 
@@ -79,6 +121,7 @@ const WindRose = function({}){
     const displayedHeadingRef = useRef(INITIAL_HEADING);
     const displayedCogRef = useRef(INITIAL_HEADING);
     const chartRef = useRef(null);
+    const readoutsRef = useRef(null);
     const headingAnimationRef = useRef(null);
     const cogAnimationRef = useRef(null);
 
@@ -247,6 +290,7 @@ const WindRose = function({}){
             endAngle: 180,
             background: [{
                 backgroundColor:'transparent',
+                borderWidth: 0,  // no thin inner circle around the readouts
                 borderRadius: 5,
                 innerRadius: '60%',
                 outerRadius: '100%',
@@ -263,7 +307,23 @@ const WindRose = function({}){
                     backgroundColor: theme==='light' ? "#000000" : "#ffffff",
                     baseWidth: 5,
                     topWidth: 1,
-                }
+                },
+                pivot: {
+                    backgroundColor: theme==='light' ? "#000000" : "#ffffff",
+                    borderWidth: 0,
+                },
+                // Hover (or tap) a dial to label its readout and fade the other one
+                stickyTracking: false,
+                point: {
+                    events: {
+                        mouseOver: function () {
+                            readoutsRef.current?.focus(this.series.name === 'Heading' ? 'heading' : 'cog');
+                        },
+                        mouseOut: function () {
+                            readoutsRef.current?.focus(null);
+                        },
+                    },
+                },
             }
         },
 
@@ -349,10 +409,7 @@ const WindRose = function({}){
                 <HighchartsReact ref={chartRef} highcharts = {Highcharts} options = {chart_options}/>
                 {/* Readouts sit just below the pivot (the chart has zero margins, so the pane centre
                     is the container centre); the heading needle always points up, leaving this clear */}
-                <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 translate-y-3 text-center text-slate-900 dark:text-white">
-                    <p className="text-3xl sm:text-4xl font-bold leading-none">{formattedHeading}°</p>
-                    <p className="mt-1 text-lg sm:text-xl font-bold leading-none">{formattedCog}°</p>
-                </div>
+                <CompassReadouts ref={readoutsRef} heading={formattedHeading} cog={formattedCog} />
             </div>
             {/* <div className="flex flex-row items-center justify-between">
                 <p className = "text-2xl text-slate-900 dark:text-white font-bold">TWA: 335°</p>
