@@ -226,6 +226,9 @@ const WindRose = function({}){
         exporting: {
             enabled: false,
         },
+        credits: {
+            enabled: false,
+        },
         tooltip: {
             enabled: false,
         },
@@ -340,15 +343,17 @@ const WindRose = function({}){
 
     return (
         <div className="rounded-xl p-3 bg-[#024887]/10 dark:bg-slate-800/90">
-            <div className="flex flex-row items-center justify-center">
-                {/* <p className = "text-2xl text-slate-900 dark:text-white font-bold">TWS: 10.2</p> */}
-                <div>
-                    <p className = "text-6xl text-slate-900 dark:text-white font-bold">{formattedHeading}°</p>
-                    <p className = "text-2xl text-center text-slate-900 dark:text-white font-bold">{formattedCog}°</p>
+            {/* <p className = "text-2xl text-slate-900 dark:text-white font-bold">TWS: 10.2</p> */}
+            {/* <p className = "text-2xl text-slate-900 dark:text-white font-bold">AWS: 13.3</p>  */}
+            <div className="relative">
+                <HighchartsReact ref={chartRef} highcharts = {Highcharts} options = {chart_options}/>
+                {/* Readouts sit just below the pivot (the chart has zero margins, so the pane centre
+                    is the container centre); the heading needle always points up, leaving this clear */}
+                <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 translate-y-3 text-center text-slate-900 dark:text-white">
+                    <p className="text-3xl sm:text-4xl font-bold leading-none">{formattedHeading}°</p>
+                    <p className="mt-1 text-lg sm:text-xl font-bold leading-none">{formattedCog}°</p>
                 </div>
-                {/* <p className = "text-2xl text-slate-900 dark:text-white font-bold">AWS: 13.3</p>  */}
             </div>
-            <HighchartsReact ref={chartRef} highcharts = {Highcharts} options = {chart_options}/> 
             {/* <div className="flex flex-row items-center justify-between">
                 <p className = "text-2xl text-slate-900 dark:text-white font-bold">TWA: 335°</p>
                 <p className = "text-2xl text-slate-900 dark:text-white font-bold">AWA: 260°</p> 

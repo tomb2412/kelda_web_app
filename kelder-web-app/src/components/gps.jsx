@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useSensorData } from '../context/SensorDataContext';
+import { useSensorData, useSensorErrors } from '../context/SensorDataContext';
 import { formatDdMmSs } from '../utils/formatters';
 
 const formatSpeeds = (value) => {
@@ -47,8 +47,35 @@ const FIX_DOT = {
     none: 'bg-red-500 ring-red-500/20',
 };
 
-const fixQuality = (gpsData) => {
-    if (!gpsData || gpsData.fix_status === 'V') {
+// GPS timestamps are UTC time-of-day ("HH:MM:SS"). Data counts as stale if it's older
+// than STALE_CLOCK_S by the clock (generous, to allow for a device clock that's a bit
+// off), or if the timestamp hasn't moved for STALE_UNCHANGED_MS on this device.
+const STALE_CLOCK_S = 120;
+const STALE_UNCHANGED_MS = 30_000;
+
+const clockAgeSeconds = (timestamp) => {
+    const match = String(timestamp ?? '').match(/^(\d{2}):(\d{2}):(\d{2})/);
+    if (!match) return null;
+    const [, h, m, sec] = match.map(Number);
+    const now = new Date();
+    const nowSeconds = now.getUTCHours() * 3600 + now.getUTCMinutes() * 60 + now.getUTCSeconds();
+    const age = (nowSeconds - (h * 3600 + m * 60 + sec) + 86400) % 86400;
+    return age > 43200 ? 0 : age;  // "future" timestamps are just clock skew
+};
+
+const fixQuality = (gpsData, { requestFailed, unchangedMs }) => {
+    // Red whenever the data can't be trusted to be current; the last values stay on screen
+    if (requestFailed) {
+        return { level: 'none', text: 'No connection' };
+    }
+    if (!gpsData) {
+        return { level: 'none', text: 'No GPS Fix' };
+    }
+    const age = clockAgeSeconds(gpsData.timestamp);
+    if ((age !== null && age > STALE_CLOCK_S) || unchangedMs > STALE_UNCHANGED_MS) {
+        return { level: 'none', text: 'Stale GPS data' };
+    }
+    if (gpsData.fix_status === 'V') {
         return { level: 'none', text: 'No GPS Fix' };
     }
     const satellites = Number.isFinite(gpsData.satellites) ? gpsData.satellites : null;
@@ -76,10 +103,10 @@ function Coordinate({ label, value, degreeDigits }) {
         : `${degrees.padStart(degreeDigits, '0')}°${rest.replace("'", '′').replace('"', '″')}`;
 
     return (
-        <div className="flex justify-center px-4 py-3" aria-label={`${label} ${value}`}>
+        <div className="flex justify-center px-4 py-3 lg:py-4" aria-label={`${label} ${value}`}>
             <span className="flex items-baseline gap-1.5">
-                <span className="text-[1.75rem] sm:text-3xl font-bold leading-none">{display}</span>
-                <span className="text-xl font-semibold">{hemisphere}</span>
+                <span className="text-[1.75rem] sm:text-3xl lg:text-4xl font-bold leading-none">{display}</span>
+                <span className="text-xl lg:text-2xl font-semibold">{hemisphere}</span>
             </span>
         </div>
     );
@@ -107,21 +134,21 @@ function Metric({ label, value, unit, tip }) {
         <>
             <p className={labelClass}>{label}</p>
             <p className="mt-1 flex items-baseline justify-center gap-1">
-                <span className="text-4xl font-bold leading-none">{value}</span>
-                {value !== '--' && <span className="text-base font-semibold">{unit}</span>}
+                <span className="text-4xl lg:text-5xl font-bold leading-none">{value}</span>
+                {value !== '--' && <span className="text-base lg:text-lg font-semibold">{unit}</span>}
             </p>
         </>
     );
 
     if (!tip) {
-        return <div className="min-w-0 px-4 py-3 text-center">{content}</div>;
+        return <div className="min-w-0 px-4 py-3 lg:py-4 text-center">{content}</div>;
     }
 
     return (
         <div ref={ref} className="relative min-w-0">
             <button
                 type="button"
-                className="w-full rounded-lg px-4 py-3 text-center transition active:bg-slate-900/5 dark:active:bg-white/5"
+                className="w-full rounded-lg px-4 py-3 lg:py-4 text-center transition active:bg-slate-900/5 dark:active:bg-white/5"
                 onClick={() => setOpen((o) => !o)}
                 aria-expanded={open}
                 aria-label={`${label} ${value} ${unit}, ${tip}`}
@@ -147,10 +174,21 @@ const GpsDisplay = function(){
 
     const latitude = formatDdMmSs(dataToRender.latitude, 'lat');
     const longitude = formatDdMmSs(dataToRender.longitude, 'lon');
-    const fix = fixQuality(gpsData);
+    const requestFailed = Boolean(useSensorErrors().gps);
+
+    // When the GPS timestamp last changed on this device. The provider re-renders every
+    // poll (success or failure), so this is re-checked every couple of seconds.
+    const lastSeenRef = useRef({ timestamp: undefined, at: Date.now() });
+    if (lastSeenRef.current.timestamp !== gpsData?.timestamp) {
+        lastSeenRef.current = { timestamp: gpsData?.timestamp, at: Date.now() };
+    }
+    const fix = fixQuality(gpsData, {
+        requestFailed,
+        unchangedMs: Date.now() - lastSeenRef.current.at,
+    });
 
     return (
-        <div className="p-3 rounded-xl bg-[#024887]/10 dark:bg-slate-800/90 text-slate-900 dark:text-white">
+        <div className="flex h-full flex-col p-3 lg:p-4 rounded-xl bg-[#024887]/10 dark:bg-slate-800/90 text-slate-900 dark:text-white">
             <div className="flex items-center justify-between gap-3 px-1 pb-3">
                 <div className="flex min-w-0 items-center gap-2">
                     <span className={`h-2 w-2 flex-shrink-0 rounded-full ring-[3px] ${FIX_DOT[fix.level]}`} aria-hidden="true" />
@@ -161,6 +199,8 @@ const GpsDisplay = function(){
                 </span>
             </div>
 
+            {/* In the 3-column grid the card is stretched to the row; spread the readings evenly */}
+            <div className="flex flex-1 flex-col justify-evenly">
             <div>
                 <Coordinate label="Latitude" value={latitude} degreeDigits={2} />
                 <Coordinate label="Longitude" value={longitude} degreeDigits={3} />
@@ -176,6 +216,7 @@ const GpsDisplay = function(){
                     value={formatBasicValue(dataToRender.dtw)}
                     tip={dataToRender.next_waypoint ? `To ${dataToRender.next_waypoint}` : null}
                 />
+            </div>
             </div>
         </div>
     )

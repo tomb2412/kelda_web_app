@@ -1208,7 +1208,9 @@ export const SolentChart = () => {
 
   return (
     <div className="flex h-full flex-col rounded-xl p-3 text-slate-800 dark:bg-slate-800/90 bg-[#024887]/10 dark:text-white">
-      <div className="relative min-h-[50vh] flex-1">
+      {/* Stacked (mobile): the map sets its own height. In the grid it just fills the row,
+          so the cards beside it set the height instead of the map stretching the row */}
+      <div className="relative min-h-[50vh] flex-1 sm:min-h-0">
         <MapContainer
           center={MAP_CENTER}
           zoom={DEFAULT_ZOOM}
