@@ -598,28 +598,26 @@ const trackStats = (points) => {
 }
 
 // Positions every `stepNm` along the track, interpolated within the segment that crosses
-// each mark: [{ nm, ll, time, from, to }] where from/to is that segment (for its direction).
+// each mark: [{ n, ll, time }] where mark n sits n * stepNm from the start.
 // Distance is summed the same way as trackStats so marks agree with the journey total.
 const trackDistanceMarks = (points, stepNm) => {
   const marks = []
   if (points.length === 0) return marks
   let travelled = 0
-  let next = stepNm
+  let n = 1
   let last = points[0]
   for (let i = 1; i < points.length; i++) {
     const p = points[i]
     const d = legBearingDistance(last.ll, p.ll).distance
     if (d < TRACK_MIN_STEP_NM) continue
-    while (travelled + d >= next) {
-      const f = (next - travelled) / d
+    while (travelled + d >= n * stepNm) {
+      const f = (n * stepNm - travelled) / d
       marks.push({
-        nm: next,
+        n,
         ll: [last.ll[0] + (p.ll[0] - last.ll[0]) * f, last.ll[1] + (p.ll[1] - last.ll[1]) * f],
         time: last.time && p.time ? new Date(+last.time + (p.time - last.time) * f) : null,
-        from: last.ll,
-        to: p.ll,
       })
-      next += stepNm
+      n++
     }
     travelled += d
     last = p
@@ -798,10 +796,10 @@ const TrackLayer = memo(function TrackLayer({ track }) {
       }).addTo(group)
     }
 
-    // Every half mile along the full-resolution track: whole miles get a timed fix, the
-    // half-mile between them a double arrowhead aligned to the local track direction
-    const marks = trackDistanceMarks(all, 0.5)
-    const fixMarks = [{ ll: all[0].ll, time: all[0].time }, ...marks.filter((m) => Number.isInteger(m.nm))]
+    // Every tenth of a mile along the full-resolution track: whole miles get a timed fix,
+    // the half-mile between them a double arrowhead. Integer counts avoid float drift.
+    const marks = trackDistanceMarks(all, 0.1)
+    const fixMarks = [{ ll: all[0].ll, time: all[0].time }, ...marks.filter((m) => m.n % 10 === 0)]
 
     const fixes = fixMarks.map(({ ll, time }) => {
       L.circleMarker(ll, {
@@ -816,11 +814,13 @@ const TrackLayer = memo(function TrackLayer({ track }) {
       }
     })
 
-    const arrows = marks.filter((m) => !Number.isInteger(m.nm)).map(({ nm, ll, from, to }) => {
-      const a = map.latLngToLayerPoint(from)
-      const b = map.latLngToLayerPoint(to)
+    const arrows = marks.flatMap((m, i) => m.n % 10 === 5 ? [{ m, i }] : []).map(({ m: { n, ll }, i }) => {
+      // Direction over the chord from 0.1 nm before to 0.1 nm after, so GPS jitter in a
+      // single short segment can't swing the arrow off the line of the track
+      const a = map.latLngToLayerPoint(marks[i - 1].ll)
+      const b = map.latLngToLayerPoint(marks[i + 1]?.ll ?? all[all.length - 1].ll)
       const angle = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI
-      const k = Math.floor(nm)  // fixes either side of this arrow
+      const k = (n - 5) / 10  // fixes either side of this arrow
       return {
         from: fixMarks[k].ll,
         to: fixMarks[k + 1]?.ll ?? all[all.length - 1].ll,
