@@ -123,6 +123,19 @@ const computeAnimationDuration = (start, target) => {
 const ICON_SIZE = 60 // px on screen
 const SNAP_RADIUS_PX = 12 // while plotting, only snap to a mark when clicking almost on it
 
+// Area-style marks grow/shrink with zoom (half the rate of the map itself) instead of
+// staying a fixed size; ICON_SIZE at ZOOM_ICON_BASE_ZOOM, clamped to a legible range.
+const ZOOM_SCALED_ICONS = new Set(["anchorage", "landmark", "berth"])
+const ZOOM_ICON_BASE_ZOOM = 14
+const ZOOM_ICON_MIN = 16
+const ZOOM_ICON_MAX = ICON_SIZE * 1.5
+
+const iconSizeAt = (key, zoom) => {
+  if (!ZOOM_SCALED_ICONS.has(key)) return ICON_SIZE
+  const size = ICON_SIZE * Math.pow(2, (zoom - ZOOM_ICON_BASE_ZOOM) / 2)
+  return Math.min(ZOOM_ICON_MAX, Math.max(ZOOM_ICON_MIN, size))
+}
+
 const ICON_URLS = {
   cardinal_north:    cardinalNorthUrl,
   cardinal_south:    cardinalSouthUrl,
@@ -180,20 +193,23 @@ const loadIconImages = () => {
   return iconImagesPromise
 }
 
-// Custom Leaflet layer: one <canvas>, all marks drawn via drawImage()
+// Custom Leaflet layer: one <canvas>, all marks drawn via drawImage().
+// Like Leaflet's own canvas renderer, the canvas overhangs the view by SEAMARK_PADDING
+// and rides along with the pane while panning, so it's only redrawn once a pan/zoom
+// ends rather than on every animation frame.
+const SEAMARK_PADDING = 0.3  // fraction of the view size added on each side
+
 const SeamarkCanvasLayer = L.Layer.extend({
   initialize: function(features, images) {
     this._features  = features
     this._images    = images
-    this._positions = []  // container-coord positions for hit testing
-    this._rafId     = null
+    this._positions = []  // layer-coord positions for hit testing (stable across pans)
   },
 
   onAdd: function(map) {
     this._map = map
     // Own pane above the water but below routes, track and markers, so waypoints
-    // and the vessel draw on top of mark icons. _draw re-anchors the canvas to the
-    // container's top-left, so canvas pixel coords == container coords.
+    // and the vessel draw on top of mark icons.
     if (!map.getPane("seamarkPane")) map.createPane("seamarkPane").style.zIndex = 430
     const canvas = document.createElement("canvas")
     canvas.style.cssText = "position:absolute;left:0;top:0;pointer-events:none"
@@ -201,51 +217,51 @@ const SeamarkCanvasLayer = L.Layer.extend({
     map.getPane("seamarkPane").appendChild(canvas)
 
     this._drawBound = this._draw.bind(this)
-    this._moveBound = this._scheduleDraw.bind(this)
-
-    map.on("viewreset zoomend moveend", this._drawBound)
-    map.on("move", this._moveBound)
+    map.on("viewreset moveend", this._drawBound)  // moveend also follows every zoom and resize
     this._draw()
   },
 
   onRemove: function(map) {
-    map.off("viewreset zoomend moveend", this._drawBound)
-    map.off("move", this._moveBound)
-    if (this._rafId) cancelAnimationFrame(this._rafId)
+    map.off("viewreset moveend", this._drawBound)
     this._canvas.remove()
   },
 
-  _scheduleDraw: function() {
-    if (this._rafId) return
-    this._rafId = requestAnimationFrame(() => { this._rafId = null; this._draw() })
-  },
-
   _draw: function() {
-    const map  = this._map
-    const size = map.getSize()
+    const map    = this._map
+    const size   = map.getSize()
+    const pad    = size.multiplyBy(SEAMARK_PADDING).round()
+    const origin = map.containerPointToLayerPoint(pad.multiplyBy(-1))  // canvas top-left, layer coords
+    const width  = size.x + pad.x * 2
+    const height = size.y + pad.y * 2
 
-    // Pane moves with the map; pin the canvas back to container 0,0 before drawing
-    L.DomUtil.setPosition(this._canvas, map.containerPointToLayerPoint([0, 0]))
-    this._canvas.width  = size.x
-    this._canvas.height = size.y
+    L.DomUtil.setPosition(this._canvas, origin)
+    // Resizing a canvas reallocates it, so only do it when the view size changes
+    if (this._canvas.width !== width || this._canvas.height !== height) {
+      this._canvas.width  = width
+      this._canvas.height = height
+    }
 
     const ctx = this._canvas.getContext("2d")
-    const S   = ICON_SIZE
+    ctx.clearRect(0, 0, width, height)
+    const zoom = map.getZoom()
     this._positions = []
 
     for (const f of this._features) {
       const [lon, lat] = f.geometry.coordinates
-      const pt = map.latLngToContainerPoint([lat, lon])
+      const pt = map.latLngToLayerPoint([lat, lon])
 
-      const img = this._images[getIconKey(f.properties)]
-      if (img) ctx.drawImage(img, pt.x - S / 2, pt.y - S / 2, S, S)
+      const key = getIconKey(f.properties)
+      const img = this._images[key]
+      const S   = iconSizeAt(key, zoom)
+      if (img) ctx.drawImage(img, pt.x - origin.x - S / 2, pt.y - origin.y - S / 2, S, S)
 
       this._positions.push({ cx: pt.x, cy: pt.y, feature: f })
     }
   },
 
   // Returns the mark within `radius` px of a container point, or null. Click handling lives in MapClickHandler.
-  hitTest: function({ x, y }, radius = ICON_SIZE) {
+  hitTest: function(containerPoint, radius = ICON_SIZE) {
+    const { x, y } = this._map.containerPointToLayerPoint(containerPoint)
     for (const { cx, cy, feature } of this._positions) {
       if (Math.abs(x - cx) <= radius && Math.abs(y - cy) <= radius) {
         return {
@@ -435,12 +451,43 @@ const SolentBaseLayer = memo(function SolentBaseLayer({ seamarkLayerRef }) {
 // ─── Dynamic vessel layer ─────────────────────────────────────────────────────
 // GPS marker is updated imperatively via Leaflet API.
 // No React state changes during animation → zero extra React renders.
-const VesselLayer = memo(function VesselLayer({ gpsData }) {
+// While `following`, the map pans alongside each marker move to keep it centred; a user
+// drag ends following (via onStopFollowing) and zooms pivot on the centre, not the pointer.
+const VesselLayer = memo(function VesselLayer({ gpsData, following, onStopFollowing }) {
   const map = useMap()
   const markerRef     = useRef(null)
   const animFrameRef  = useRef(null)
   const currentLLRef  = useRef(null)   // [lat, lon] of marker as it animates
   const isFirstRef    = useRef(true)
+  const followingRef  = useRef(following)
+  const onStopRef     = useRef(onStopFollowing)
+  followingRef.current = following
+  onStopRef.current    = onStopFollowing
+
+  // One Leaflet pan per GPS update rather than a setView per frame: the pan is a cheap CSS
+  // transform, and easeLinearity 1/3 gives Leaflet's ease-out the same curve as the
+  // marker's easeOutCubic, so the two stay in step. Skipped mid zoom-animation, where a
+  // pan would cut the zoom short.
+  const centreOnVessel = useCallback((ll, panSeconds = 0) => {
+    if (!followingRef.current || !ll || map._animatingZoom) return
+    map.panTo(ll, panSeconds > 0
+      ? { animate: true, duration: panSeconds, easeLinearity: 1 / 3 }
+      : { animate: false })
+  }, [map])
+
+  useEffect(() => {
+    if (!following) return
+    centreOnVessel(currentLLRef.current, 0.5)
+    map.options.scrollWheelZoom = "center"
+    map.options.touchZoom = "center"
+    const onDrag = () => onStopRef.current?.()
+    map.on("dragstart", onDrag)
+    return () => {
+      map.off("dragstart", onDrag)
+      map.options.scrollWheelZoom = true
+      map.options.touchZoom = true
+    }
+  }, [map, following, centreOnVessel])
 
   // Initialise vessel marker once
   useEffect(() => {
@@ -476,6 +523,7 @@ const VesselLayer = memo(function VesselLayer({ gpsData }) {
       isFirstRef.current = false
       markerRef.current.setLatLng([targetLat, targetLon])
       currentLLRef.current = [targetLat, targetLon]
+      centreOnVessel(currentLLRef.current)
       return
     }
 
@@ -484,6 +532,7 @@ const VesselLayer = memo(function VesselLayer({ gpsData }) {
 
     const duration  = computeAnimationDuration(start, [targetLat, targetLon])
     const startTime = performance.now()
+    centreOnVessel([targetLat, targetLon], duration / 1000)
 
     const animate = (now) => {
       const rawProgress = Math.min((now - startTime) / duration, 1)
@@ -508,7 +557,7 @@ const VesselLayer = memo(function VesselLayer({ gpsData }) {
         animFrameRef.current = null
       }
     }
-  }, [gpsData?.longitude, gpsData?.latitude, gpsData?.cog])
+  }, [gpsData?.longitude, gpsData?.latitude, gpsData?.cog, centreOnVessel])
 
   return null
 })
@@ -548,8 +597,35 @@ const trackStats = (points) => {
   return { distance, hours, speed: hours > 0 ? distance / hours : null }
 }
 
-// Fix-mark spacing scales with journey length so a long passage isn't wall-to-wall labels
-const fixIntervalMinutes = (hours) => (hours <= 1.5 ? 15 : hours <= 4 ? 30 : 60)
+// Positions every `stepNm` along the track, interpolated within the segment that crosses
+// each mark: [{ nm, ll, time, from, to }] where from/to is that segment (for its direction).
+// Distance is summed the same way as trackStats so marks agree with the journey total.
+const trackDistanceMarks = (points, stepNm) => {
+  const marks = []
+  if (points.length === 0) return marks
+  let travelled = 0
+  let next = stepNm
+  let last = points[0]
+  for (let i = 1; i < points.length; i++) {
+    const p = points[i]
+    const d = legBearingDistance(last.ll, p.ll).distance
+    if (d < TRACK_MIN_STEP_NM) continue
+    while (travelled + d >= next) {
+      const f = (next - travelled) / d
+      marks.push({
+        nm: next,
+        ll: [last.ll[0] + (p.ll[0] - last.ll[0]) * f, last.ll[1] + (p.ll[1] - last.ll[1]) * f],
+        time: last.time && p.time ? new Date(+last.time + (p.time - last.time) * f) : null,
+        from: last.ll,
+        to: p.ll,
+      })
+      next += stepNm
+    }
+    travelled += d
+    last = p
+  }
+  return marks
+}
 
 const formatChartTime = (date) =>
   `${String(date.getHours()).padStart(2, "0")}${String(date.getMinutes()).padStart(2, "0")}`
@@ -669,8 +745,8 @@ const RouteLayer = memo(function RouteLayer({ latLngs, names, dashed = false, sh
 
 // ─── Track layer ──────────────────────────────────────────────────────────────
 // Past track chart-style: dark cased line fading towards its start, timed fix
-// marks ("1030") at regular intervals, and double arrowheads (the ground-track
-// convention) between fixes. Labels/arrows hide when crowded at the current zoom.
+// marks ("1030") every nautical mile run, and double arrowheads (the ground-track
+// convention) midway between fixes. Labels/arrows hide when crowded at the current zoom.
 
 const TRACK_LABEL_MIN_PX = 44
 const TRACK_ARROW_MIN_PX = 70
@@ -722,52 +798,40 @@ const TrackLayer = memo(function TrackLayer({ track }) {
       }).addTo(group)
     }
 
-    // Timed fixes: departure, then the first point on or after each interval boundary
-    const { hours } = trackStats([all[0], all[all.length - 1]])
-    const intervalMs = fixIntervalMinutes(hours) * 60_000
-    const fixIdx = []
-    let nextBoundary = null
-    points.forEach((p, i) => {
-      if (!p.time) return
-      if (nextBoundary === null) {
-        fixIdx.push(i)
-        nextBoundary = Math.floor(p.time / intervalMs) * intervalMs + intervalMs
-      } else if (p.time >= nextBoundary) {
-        fixIdx.push(i)
-        nextBoundary = Math.floor(p.time / intervalMs) * intervalMs + intervalMs
-      }
-    })
+    // Every half mile along the full-resolution track: whole miles get a timed fix, the
+    // half-mile between them a double arrowhead aligned to the local track direction
+    const marks = trackDistanceMarks(all, 0.5)
+    const fixMarks = [{ ll: all[0].ll, time: all[0].time }, ...marks.filter((m) => Number.isInteger(m.nm))]
 
-    const fixes = fixIdx.map((i) => {
-      L.circleMarker(points[i].ll, {
+    const fixes = fixMarks.map(({ ll, time }) => {
+      L.circleMarker(ll, {
         renderer, pane: "trackPane", interactive: false,
         radius: 3.5, weight: 1.5, color: MAP_COLORS.track, fillColor: "white", fillOpacity: 1,
       }).addTo(group)
       return {
-        ll: points[i].ll,
-        label: L.marker(points[i].ll, {
-          interactive: false, keyboard: false, icon: createFixLabelIcon(formatChartTime(points[i].time)),
+        ll,
+        label: time && L.marker(ll, {
+          interactive: false, keyboard: false, icon: createFixLabelIcon(formatChartTime(time)),
         }).addTo(group),
       }
     })
 
-    // Double arrowhead midway between consecutive fixes, aligned to the local track direction
-    const arrows = fixIdx.slice(1).map((end, k) => {
-      const start = fixIdx[k]
-      const mid = Math.floor((start + end) / 2)
-      const a = map.latLngToLayerPoint(points[Math.max(start, mid - 1)].ll)
-      const b = map.latLngToLayerPoint(points[Math.min(end, mid + 1)].ll)
+    const arrows = marks.filter((m) => !Number.isInteger(m.nm)).map(({ nm, ll, from, to }) => {
+      const a = map.latLngToLayerPoint(from)
+      const b = map.latLngToLayerPoint(to)
       const angle = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI
+      const k = Math.floor(nm)  // fixes either side of this arrow
       return {
-        from: points[start].ll,
-        to: points[end].ll,
-        marker: L.marker(points[mid].ll, { interactive: false, keyboard: false, icon: createTrackArrowIcon(angle) }).addTo(group),
+        from: fixMarks[k].ll,
+        to: fixMarks[k + 1]?.ll ?? all[all.length - 1].ll,
+        marker: L.marker(ll, { interactive: false, keyboard: false, icon: createTrackArrowIcon(angle) }).addTo(group),
       }
     })
 
     const updateVisibility = () => {
       let lastShown = null
       for (const { ll, label } of fixes) {
+        if (!label) continue
         const pt = map.latLngToContainerPoint(ll)
         const show = !lastShown || pt.distanceTo(lastShown) >= TRACK_LABEL_MIN_PX
         label.getElement().style.display = show ? "" : "none"
@@ -792,12 +856,13 @@ const TrackLayer = memo(function TrackLayer({ track }) {
 
 // ─── Journey stats ────────────────────────────────────────────────────────────
 
-const JourneyStats = memo(function JourneyStats({ track }) {
+// hideOnMobile: the mark info card shares the bottom edge and overlaps this on narrow screens.
+const JourneyStats = memo(function JourneyStats({ track, hideOnMobile }) {
   const stats = useMemo(() => trackStats(parseTrack(track)), [track])
   if (!stats.distance) return null
 
   return (
-    <div className="absolute bottom-4 right-4 z-[1000] rounded-xl border border-slate-200/60 bg-white/96 px-3 py-2 text-slate-900 shadow-xl dark:border-slate-700/60 dark:bg-slate-900/96 dark:text-white">
+    <div className={`${hideOnMobile ? "hidden sm:block" : ""} absolute bottom-4 right-4 z-[1000] rounded-xl border border-slate-200/60 bg-white/96 px-3 py-2 text-slate-900 shadow-xl dark:border-slate-700/60 dark:bg-slate-900/96 dark:text-white`}>
       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Journey</p>
       <div className="mt-0.5 flex items-baseline gap-3 tabular-nums">
         <span className="text-lg font-semibold leading-none">
@@ -808,7 +873,7 @@ const JourneyStats = memo(function JourneyStats({ track }) {
       </div>
     </div>
   )
-}, sameTrack)
+}, (prev, next) => sameTrack(prev, next) && prev.hideOnMobile === next.hideOnMobile)
 
 // ─── Map click handler ────────────────────────────────────────────────────────
 // Single click listener for the map: hit-tests seamarks first, then hands the
@@ -824,9 +889,12 @@ const MapClickHandler = ({ seamarkLayerRef, onClickRef, plotting }) => {
 
   // While plotting: disable double-click zoom (it would add two waypoints and zoom) and swap
   // the native cursor for a drawn cross with a live lat/lon readout, moved imperatively.
+  // Touch devices have no hover cursor, so the cross is pinned to the map centre instead
+  // and reads the centre position as the map is panned.
   useEffect(() => {
     if (!plotting) return
     const container = map.getContainer()
+    const isTouch = window.matchMedia("(hover: none) and (pointer: coarse)").matches
 
     const cursor = document.createElement("div")
     cursor.style.cssText = "position:absolute;left:0;top:0;pointer-events:none;z-index:1002;display:none"
@@ -841,6 +909,25 @@ const MapClickHandler = ({ seamarkLayerRef, onClickRef, plotting }) => {
     const label = cursor.lastElementChild
     container.appendChild(cursor)
 
+    map.doubleClickZoom.disable()
+
+    if (isTouch) {
+      const onCentre = () => {
+        const { x, y } = map.getSize().divideBy(2)
+        cursor.style.transform = `translate(${x}px, ${y}px)`
+        const c = map.getCenter()
+        label.textContent = formatLatLng([c.lat, c.lng])
+      }
+      cursor.style.display = "block"
+      onCentre()
+      map.on("move resize", onCentre)
+      return () => {
+        map.off("move resize", onCentre)
+        map.doubleClickZoom.enable()
+        cursor.remove()
+      }
+    }
+
     const onMove = (e) => {
       const { x, y } = e.containerPoint
       cursor.style.display = "block"
@@ -849,7 +936,6 @@ const MapClickHandler = ({ seamarkLayerRef, onClickRef, plotting }) => {
     }
     const onOut = () => { cursor.style.display = "none" }
 
-    map.doubleClickZoom.disable()
     container.style.cursor = "none"
     map.on("mousemove", onMove)
     map.on("mouseout", onOut)
@@ -994,10 +1080,15 @@ const MapResizeSync = () => {
 }
 
 // ─── Zoom controls (rendered inside MapContainer so useMap() is available) ────
-const ZoomControls = () => {
+const ZoomControls = ({ following, onToggleFollow }) => {
   const map = useMap()
+  // Rendered inside the map container, so stop button clicks reaching the map as map
+  // clicks (which would dismiss the mark card or drop a waypoint while plotting)
+  const ref = useRef(null)
+  useEffect(() => { L.DomEvent.disableClickPropagation(ref.current) }, [])
   return (
     <div
+      ref={ref}
       className="absolute right-4 top-4 flex flex-col overflow-hidden rounded-lg shadow"
       style={{ zIndex: 1001 }}
     >
@@ -1017,6 +1108,21 @@ const ZoomControls = () => {
       >
         −
       </button>
+      <button
+        type="button"
+        className={`flex items-center justify-center border-t border-slate-200 py-2 transition ${
+          following ? "bg-[#024887] text-white" : "bg-white/90 text-slate-800 hover:bg-white"
+        }`}
+        onClick={onToggleFollow}
+        aria-label={following ? "Stop following vessel" : "Centre on vessel"}
+        aria-pressed={following}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <circle cx="12" cy="12" r="6" />
+          <circle cx="12" cy="12" r="2" fill="currentColor" />
+          <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+        </svg>
+      </button>
     </div>
   )
 }
@@ -1027,6 +1133,8 @@ export const SolentChart = () => {
   const passagePlanData = useSensorData("passagePlan")
   const refreshPassagePlan = useRefreshPassagePlan()
   const [selectedMark, setSelectedMark] = useState(null)
+  const [following, setFollowing] = useState(false)
+  const stopFollowing = useCallback(() => setFollowing(false), [])
 
   // Route plotting: draft holds Waypoint objects in the backend's shape
   // Plotting is Clerk-gated; signing out mid-plot drops back to view mode
@@ -1043,7 +1151,7 @@ export const SolentChart = () => {
   const onMapClickRef = useRef(null)
   onMapClickRef.current = (mark, latlng) => {
     if (!plotting) {
-      if (mark) setSelectedMark(mark)
+      setSelectedMark(mark)  // clicking empty water (mark === null) dismisses the info card
       return
     }
     const waypoint = mark
@@ -1117,13 +1225,13 @@ export const SolentChart = () => {
         >
           <SolentBaseLayer seamarkLayerRef={seamarkLayerRef} />
           <TrackLayer track={gpsData?.track} />
-          <VesselLayer gpsData={gpsData} />
+          <VesselLayer gpsData={gpsData} following={following} onStopFollowing={stopFollowing} />
           {plotting
             ? <RouteLayer latLngs={draftLatLngs} dashed showWaypoints={false} />
             : <RouteLayer latLngs={passageRoute.latLngs} names={passageRoute.names} />}
           {plotting && <DraftRouteLayer waypoints={draft} onMove={moveWaypoint} onRemove={removeWaypoint} />}
           <MapClickHandler seamarkLayerRef={seamarkLayerRef} onClickRef={onMapClickRef} plotting={plotting} />
-          <ZoomControls />
+          <ZoomControls following={following} onToggleFollow={() => setFollowing((f) => !f)} />
           <MapResizeSync />
         </MapContainer>
         {isSignedIn && <PlotControls
@@ -1139,7 +1247,7 @@ export const SolentChart = () => {
           onSave={saveRoute}
         />}
         <MarkInfoPanel mark={selectedMark} onClose={() => setSelectedMark(null)} />
-        <JourneyStats track={gpsData?.track} />
+        <JourneyStats track={gpsData?.track} hideOnMobile={!!selectedMark} />
       </div>
     </div>
   )

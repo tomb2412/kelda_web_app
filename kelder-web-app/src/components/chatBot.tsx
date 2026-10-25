@@ -309,7 +309,7 @@ export default function FloatingChat() {
             <div className="px-3 pb-3 pt-2 flex-shrink-0 border-t border-slate-200/60 dark:border-slate-700/60 bg-white/50 dark:bg-slate-900/50">
               <form onSubmit={handleSubmit} className="flex items-center gap-2">
                 <input
-                  className="flex-1 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm px-4 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#024887]/30 focus:border-[#024887]/40 dark:focus:ring-blue-500/30 transition"
+                  className="flex-1 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-base sm:text-sm px-4 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#024887]/30 focus:border-[#024887]/40 dark:focus:ring-blue-500/30 transition"
                   value={input}
                   placeholder="Ask about passage, tides..."
                   onChange={e => setInput(e.target.value)}

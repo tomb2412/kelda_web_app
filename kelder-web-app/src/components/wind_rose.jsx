@@ -8,6 +8,8 @@ import { useSensorData } from '../context/SensorDataContext';
 
 const INITIAL_HEADING = 0;
 const ROTATION_ANIMATION_MS = 800;
+// Each displayed angle change re-renders the whole chart, so cap re-renders during a rotation
+const ROTATION_STEP_MS = 100;
 const DEFAULT_COMPASS_READING = {
     heading: INITIAL_HEADING,
     course_over_ground: INITIAL_HEADING,
@@ -132,6 +134,7 @@ const WindRose = function({}){
 
             const current = currentRef.current;
             const target = current + shortestAngleDelta(current, targetValue);
+            let lastStepAt = 0;
 
             animator.attr({ [attrKey]: current });
             animator.animate(
@@ -146,6 +149,11 @@ const WindRose = function({}){
                         }
                         const normalized = normalizeAngle(value);
                         currentRef.current = normalized;
+                        const now = performance.now();
+                        if (now - lastStepAt < ROTATION_STEP_MS) {
+                            return;
+                        }
+                        lastStepAt = now;
                         setter(normalized);
                     },
                     complete: function () {

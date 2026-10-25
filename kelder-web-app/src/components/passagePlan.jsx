@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useThemeContext } from './ThemeContext';
 import { useSensorData } from '../context/SensorDataContext';
 
@@ -17,6 +18,12 @@ const PassagePlan = function(){
     const {theme} = useThemeContext();
 
     const passagePlanData = useSensorData('passagePlan');
+    // next_waypoint_number is 1-based over course_to_steer (departure = 1); null when not under way
+    const gpsData = useSensorData('gps');
+    const nextNumber = Number(gpsData?.next_waypoint_number);
+    const activeIndex = Number.isInteger(nextNumber) && nextNumber > 0 ? nextNumber - 1 : null;
+    const scrollRef = useRef(null);
+    const activeRowRef = useRef(null);
     const passagePlan = passagePlanData?.passage_plan ?? null;
     const isLoading = !passagePlan;
     const planToRender = passagePlan ?? fallbackPlan;
@@ -38,6 +45,16 @@ const PassagePlan = function(){
         ? `Passage Plan: ${planToRender.departure_place_name} to ${planToRender.desination_place_name}`
         : 'Passage Plan';
 
+    // Centre the active row within the table's own scroll area when the next waypoint changes
+    // (scrollIntoView would also scroll the page)
+    useEffect(() => {
+        const container = scrollRef.current;
+        const row = activeRowRef.current;
+        if (!container || !row) return;
+        const rowTop = row.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
+        container.scrollTo({ top: rowTop - (container.clientHeight - row.offsetHeight) / 2, behavior: 'smooth' });
+    }, [activeIndex, waypoints.length]);
+
     return (
         <div className="rounded-xl p-3 bg-slate-200 text-slate-900 dark:bg-slate-800/90 dark:text-white">
             <span className="text-left mt-5 text-3xl font-semibold">{headingText}</span>
@@ -46,7 +63,7 @@ const PassagePlan = function(){
                     Loading passage plan…
                 </p>
             )}
-            <div className="w-full overflow-y-auto max-h-[375px] mt-2">
+            <div ref={scrollRef} className="w-full overflow-y-auto max-h-[375px] mt-2">
                 <table className="min-w-full table-auto border-collapse">
                     <colgroup>
                         <col className="w-1/2" />
@@ -64,7 +81,16 @@ const PassagePlan = function(){
                     </thead>
                     <tbody>
                     {waypoints.map((waypoint, index) => (
-                        <tr key={index} className="even:bg-transparent odd:bg-transparent">
+                        <tr
+                            key={index}
+                            ref={index === activeIndex ? activeRowRef : undefined}
+                            aria-current={index === activeIndex ? 'step' : undefined}
+                            className={
+                                activeIndex === null ? '' :
+                                index === activeIndex ? 'bg-[#024887]/15 dark:bg-blue-500/20 font-semibold' :
+                                index < activeIndex ? 'opacity-40' : ''
+                            }
+                        >
                             <td className="px-4 py-2 text-center"><strong>{waypoint.name}</strong></td>
                             <td className="px-4 py-2 text-center">
                                 {fmtCoord(waypoint.latitude, waypoint.latitude_hemisphere)}, {fmtCoord(waypoint.longitude, waypoint.longitude_hemisphere)}
