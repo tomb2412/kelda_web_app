@@ -59,11 +59,11 @@ const GpsDisplay = function(){
                     </div>
                     <div className="col-span-1 text-slate-900 dark:text-white text-center" >
                         <p className='font-semibold text-2xl lg:text-xl'>Latitude</p>
-                        <p className='font-bold text-3xl sm:text-3xl lg:text-2xl'>{formatDdMmSs(dataToRender.latitude)}</p>
+                        <p className='font-bold text-3xl sm:text-3xl lg:text-2xl'>{formatDdMmSs(dataToRender.latitude, 'lat')}</p>
                     </div>
                     <div className="col-span-1 text-slate-900 dark:text-white text-center" >
                         <p className='font-semibold text-2xl lg:text-xl'>Longitude</p>
-                        <p className='font-bold text-3xl sm:text-3xl lg:text-2xl'>{formatDdMmSs(dataToRender.longitude)}</p>
+                        <p className='font-bold text-3xl sm:text-3xl lg:text-2xl'>{formatDdMmSs(dataToRender.longitude, 'lon')}</p>
                     </div>
                 </div>
                 <div className='grid grid-rows-2 grid-cols-2 gap-4 p-5'> 
